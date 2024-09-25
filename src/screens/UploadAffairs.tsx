@@ -1,227 +1,310 @@
-import React from 'react';
-import {UploadOutlined, UserOutlined, VideoCameraOutlined, CalendarOutlined, DownOutlined} from '@ant-design/icons';
-import {
-	Layout,
-	Menu,
-	theme,
-	Typography,
-	Grid,
-	DatePicker,
-	Input,
-	Button,
-	Upload,
-	Dropdown,
-	message,
-	Space,
-	Tooltip, Col, Row
-} from 'antd';
+import React, {useState} from 'react';
+import {PlusOutlined, DeleteOutlined} from '@ant-design/icons';
+import {useNavigate} from 'react-router-dom';
+import {Layout, Menu, theme, Button, DatePicker, Form, Input, Upload, Select, message} from 'antd';
 import './styles.css';
-import type {MenuProps} from 'antd';
+import TextArea from "antd/es/input/TextArea";
 
-const {Header, Content, Footer, Sider} = Layout;
-const items = [UserOutlined, VideoCameraOutlined, UploadOutlined, UserOutlined].map(
-	(icon, index) => ({
-		key: String(index + 1),
-		icon: React.createElement(icon),
-		label: `nav ${index + 1}`,
-	})
-);
-const {Title} = Typography;
+const {Header, Content, Sider} = Layout;
 const {useToken} = theme;
-const {useBreakpoint} = Grid;
-
-const handleMenuClick: MenuProps['onClick'] = (e) => {
-	message.info('Clicked on menu item.');
-	console.log('click', e);
-};
-
-const menuItems: MenuProps['items'] = [
-	{
-		label: 'World',
-		key: '1',
-		icon: <UserOutlined/>,
-		onClick: handleMenuClick,
-	},
-	{
-		label: 'India',
-		key: '2',
-		icon: <UserOutlined/>,
-		onClick: handleMenuClick,
-	},
-	{
-		label: 'Assam',
-		key: '3',
-		icon: <UserOutlined/>,
-		onClick: handleMenuClick,
-	},
-	{
-		label: 'Economics',
-		key: '4',
-		icon: <UserOutlined/>,
-		onClick: handleMenuClick,
-	},
-];
 
 const UploadAffairs = () => {
-	const {token} = useToken();
-	const screens = useBreakpoint();
-	const {
-		token: {colorBgContainer, borderRadiusLG},
-	} = theme.useToken();
+	const navigate = useNavigate();
+	const [options, setOptions] = useState([
+		{value: 'world', label: 'World'},
+		{value: 'india', label: 'India'},
+		{value: 'economics', label: 'Economics'},
+		{value: 'assam', label: 'Assam'},
+	]);
 
-	const styles = {
-		title: {
-			fontSize: screens.md ? token.fontSizeHeading2 : token.fontSizeHeading3,
-		},
+	const [affairs, setAffairs] = useState([
+		{
+			date: null,
+			classification: '',
+			title: '',
+			description: '',
+			image: [],
+			showInput: false,
+			newOptionValue: '',
+			selectDisabled: false
+		}
+	]);
+
+	const handleSelectChange = (index, value) => {
+		const updatedAffairs = [...affairs];
+
+		if (value === 'add_new') {
+			updatedAffairs[index].showInput = true;
+			updatedAffairs[index].selectDisabled = true;
+		} else {
+			updatedAffairs[index].classification = value;
+		}
+		setAffairs(updatedAffairs);
+	};
+
+	const handleSaveNewOption = (index) => {
+		const updatedAffairs = [...affairs];
+		const newClassification = updatedAffairs[index].newOptionValue;
+
+		if (newClassification) {
+			const newOptions = [...options, {value: newClassification.toLowerCase(), label: newClassification}];
+			setOptions(newOptions);
+
+			updatedAffairs[index].classification = newClassification.toLowerCase();
+			updatedAffairs[index].showInput = false;
+			updatedAffairs[index].selectDisabled = false;
+			updatedAffairs[index].newOptionValue = '';
+			setAffairs(updatedAffairs);
+		}
+	};
+
+	const handleCancel = (index) => {
+		const updatedAffairs = [...affairs];
+		updatedAffairs[index].newOptionValue = '';
+		updatedAffairs[index].showInput = false;
+		updatedAffairs[index].selectDisabled = false;
+		setAffairs(updatedAffairs);
+	};
+
+	const handleAddMore = () => {
+		setAffairs([
+			...affairs,
+			{
+				date: null,
+				classification: '',
+				title: '',
+				description: '',
+				image: [],
+				showInput: false,
+				newOptionValue: '',
+				selectDisabled: false
+			}
+		]);
+	};
+
+	const handleDeleteAffair = (index) => {
+		const updatedAffairs = [...affairs];
+		updatedAffairs.splice(index, 1);
+		setAffairs(updatedAffairs);
+	};
+
+	const handleChange = (index, field, value) => {
+		const updatedAffairs = [...affairs];
+		updatedAffairs[index][field] = value;
+		setAffairs(updatedAffairs);
+	};
+
+	const handleFileChange = (index, {fileList}) => {
+		const updatedAffairs = [...affairs];
+		updatedAffairs[index].image = fileList.slice(-1);
+		setAffairs(updatedAffairs);
+	};
+
+	const handleSubmitAll = () => {
+		console.log('All affairs submitted:', affairs);
+		setAffairs([{
+			date: null,
+			classification: '',
+			title: '',
+			description: '',
+			image: [],
+			showInput: false,
+			newOptionValue: '',
+			selectDisabled: false
+		}]);
+		message.success('All affairs submitted successfully');
+	};
+
+
+	const onMenuClick = ({key}) => {
+		if (key === '1') {
+			navigate('/dashboard');
+		} else if (key === '2') {
+			navigate('/live-test-questions');
+		} else if (key === '3') {
+			navigate('/question-papers');
+		} else if (key === '4') {
+			navigate('/notes');
+		} else if (key === '5') {
+			navigate('/references');
+		} else if (key === '6') {
+			navigate('/upload-current-affairs');
+		}
 	};
 
 	return (
 		<Layout style={{minHeight: '100vh', minWidth: '100vw'}}>
 			<Sider
-				breakpoint="lg"
-				collapsedWidth="0"
-				onBreakpoint={(broken) => {
-					console.log(broken);
-				}}
-				onCollapse={(collapsed, type) => {
-					console.log(collapsed, type);
-				}}
+				width={200}
+				style={{background: '#f4f4f4', paddingTop: 20, boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)'}}
 			>
-				<div className="demo-logo-vertical"/>
-				<Menu theme="dark" mode="inline" defaultSelectedKeys={['4']} items={items}/>
+				<Menu style={{background: '#f4f4f4'}} defaultSelectedKeys={['1']} mode="inline" onClick={onMenuClick}>
+					<Menu.Item key="1">Dashboard</Menu.Item>
+					<Menu.SubMenu key="sub1" title="Exams">
+						<Menu.Item key="2">Live Test Questions</Menu.Item>
+						<Menu.Item key="3">Question Papers</Menu.Item>
+						<Menu.Item key="4">Notes</Menu.Item>
+						<Menu.Item key="5">References</Menu.Item>
+					</Menu.SubMenu>
+					<Menu.Item key="6">Current Affairs</Menu.Item>
+				</Menu>
 			</Sider>
 			<Layout>
-				<Header
-					style={{
-						padding: 0,
-						background: colorBgContainer,
-						textAlign: 'center',
-					}}
-				>
-					<Title style={styles.title}>BidYa Admin Portal</Title>
+				<Header style={{
+					background: '#f4f4f4',
+					textAlign: 'center',
+					color: 'black',
+					fontSize: 32,
+					fontWeight: 'bold'
+				}}>
+					BidYa Admin Portal
 				</Header>
-				<Content
-					style={{
-						margin: '24px 16px 0',
-					}}
-				>
-					<div
+				<Layout style={{padding: '24px 24px 24px'}}>
+					<Content
 						style={{
-							padding: 24,
-							minHeight: '90vh',
-							background: colorBgContainer,
-							borderRadius: borderRadiusLG,
+							padding: 0,
+							margin: 0,
+							minHeight: 280,
+							background: '#fff',
+							borderRadius: '8px',
 						}}
 					>
-						<div style={{height: '100vh'}}>
-							<div>
-								<Dropdown
-									menu={{
-										items: menuItems,
-									}}
-									trigger={['click']}
-								>
-									<a onClick={(e) => e.preventDefault()}>
-										<Space>
-											<Button>
-												Select Categories
-												<DownOutlined/>
-											</Button>
-										</Space>
-									</a>
-								</Dropdown>
-							</div>
+						<div style={{color: 'black', fontSize: 24, padding: '24px 24px 0'}}>Current Affairs Section
+						</div>
+						<hr style={{margin: '20px 0', border: 'none', borderTop: '1px solid #e0e0e0'}}/>
 
-							<Row style={{
-								height: '100vh',
-								justifyContent: 'space-evenly',
-								paddingTop: 40,
+						{affairs.map((affair, index) => (
+							<div key={index} style={{
+								display: 'flex',
+								justifyContent: 'center',
+								flexDirection: 'row',
+								marginBottom: '20px',
+								padding: '20px'
 							}}>
-								<Col style={{width: '100vw', borderRadius: 16}} span={11}>
-									<div style={{
-										background: '#d1d5db',
-										height: '60vh',
-										alignContent: 'center',
-										borderRadius: 16
-									}}>
-										<div className="input-group" style={{marginTop: '20px'}}>
-											<label className="text-lg font-semibold">DATE OF CURRENT AFFAIRS</label>
+								<Form style={{
+									width: '70%',
+									display: 'flex',
+									flexDirection: 'row',
+									gap: '20px',
+									alignItems: 'center',
+									border: '1px solid #e0e0e0',
+									padding: 20,
+									borderRadius: '8px',
+								}}>
+									<div style={{flex: 2}}>
+										<Form.Item label={`Current Affair Date ${index + 1}`}>
 											<DatePicker
-												placeholder="Select date"
-												suffixIcon={<CalendarOutlined/>}
-												className="w-full"
+												style={{width: '100%'}}
+												value={affair.date}
+												onChange={(date) => handleChange(index, 'date', date)}
+											/>
+										</Form.Item>
+										<Form.Item label="Select Classification">
+											<Select
+												placeholder="Please select"
+												onChange={(value) => handleSelectChange(index, value)}
+												value={affair.classification}
+												style={{width: '100%'}}
+												disabled={affair.selectDisabled}
+											>
+												{options.map((option) => (
+													<Select.Option key={option.value} value={option.value}>
+														{option.label}
+													</Select.Option>
+												))}
+												<Select.Option value="add_new" key="add_new">
+													Add New
+												</Select.Option>
+											</Select>
+										</Form.Item>
+
+										{affair.showInput && (
+											<div style={{
+												marginTop: '10px',
+												marginBottom: '20px',
+												display: 'flex',
+												alignItems: 'center',
+												gap: '10px',
+												justifyContent: 'center'
+											}}>
+												<Input
+													placeholder="Enter new classification"
+													value={affair.newOptionValue}
+													onChange={(e) => handleChange(index, 'newOptionValue', e.target.value)}
+													style={{width: 200}}
+												/>
+												<Button type="primary" onClick={() => handleSaveNewOption(index)}>
+													Save
+												</Button>
+												<Button onClick={() => handleCancel(index)}>Cancel</Button>
+											</div>
+										)}
+
+										<Form.Item label="Enter Title">
+											<Input
+												placeholder="Enter Title"
+												value={affair.title}
+												onChange={(e) => handleChange(index, 'title', e.target.value)}
 												style={{width: '100%'}}
 											/>
-										</div>
-										<div style={{marginTop: '20px'}}>
-								<textarea
-									rows={5}
-									className="textarea"
-									placeholder="Enter Description"
-									style={{width: '100%', padding: '10px', borderRadius: '4px'}}
-								/>
-											<Button
-												type="primary"
-												className="full-width-button"
-												style={{width: '100%', marginTop: '10px'}}
-											>
-												ENTER DESCRIPTION
-											</Button>
-											<Button
-												type="primary"
-												className="full-width-button"
+										</Form.Item>
+
+										<Form.Item label="Enter Description">
+											<TextArea
+												rows={4}
+												value={affair.description}
+												onChange={(e) => handleChange(index, 'description', e.target.value)}
 												style={{width: '100%'}}
-											>
-												ADD MORE
-											</Button>
-										</div>
+											/>
+										</Form.Item>
 									</div>
-								</Col>
-								<Col style={{width: '100vw', borderRadius: 16}} span={11}>
-									<div style={{
-										background: '#d1d5db',
-										height: '60vh',
-										alignContent: 'center',
-										borderRadius: 16
-									}}>
-										<div className="flex flex-col items-center gap-6" style={{marginTop: '20px'}}>
-											<Upload className="w-full" style={{width: '100%'}}>
-												<Button
-													icon={<UploadOutlined/>}
-													className="full-width-button"
-													style={{width: '100%'}}
-												>
-													Upload Image
-												</Button>
+									<div>
+										<Form.Item valuePropName="fileList">
+											<Upload
+												action="/upload.do"
+												listType="picture-card"
+												fileList={affair.image}
+												onChange={(file) => handleFileChange(index, file)}
+												maxCount={1}
+											>
+												{affair.image.length < 1 && (
+													<button style={{border: 0, background: 'none'}} type="button">
+														<PlusOutlined/>
+														<div style={{marginTop: 8}}>Upload Image</div>
+													</button>
+												)}
 											</Upload>
-											<Button
-												type="primary"
-												className="full-width-button"
-												style={{width: '100%'}}
-											>
-												CHANGE PHOTO
-											</Button>
-											<Button
-												type="primary"
-												className="full-width-button"
-												style={{width: '100%'}}
-											>
-												CONFIRM
-											</Button>
-										</div>
+										</Form.Item>
 									</div>
-								</Col>
-								<div>
-									<Button onClick={() => {
-										alert('Successfully submitted')
-									}}>
-										CONFIRM AND SUBMIT
-									</Button>
-								</div>
-							</Row>
-						</div>
-					</div>
-				</Content>
+									<div>
+										<Form.Item>
+											<Button
+												type="danger"
+												onClick={() => handleDeleteAffair(index)}
+												style={{width: '100%'}}
+												disabled={affairs.length === 1}
+											>
+												<DeleteOutlined/> Delete
+											</Button>
+										</Form.Item>
+									</div>
+								</Form>
+							</div>
+						))}
+
+						<Form.Item style={{display: 'flex', justifyContent: 'center'}}>
+							<Button type="primary" onClick={handleAddMore} style={{width: '100%'}}>
+								Add More
+							</Button>
+						</Form.Item>
+
+						<Form.Item style={{display: 'flex', justifyContent: 'center'}}>
+							<Button type="primary" onClick={handleSubmitAll} style={{width: '100%'}}>
+								Submit All Affairs
+							</Button>
+						</Form.Item>
+					</Content>
+				</Layout>
 			</Layout>
 		</Layout>
 	);

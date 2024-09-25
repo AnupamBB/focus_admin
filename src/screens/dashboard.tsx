@@ -16,7 +16,7 @@ const Dashboard = () => {
 	const [selectedExamCategory, setSelectedExamCategory] = useState('Select exam category');
 
 	const handleUploadQuestions = () => {
-		navigate('/upload-exam-questions');
+		navigate('/live-test-questions');
 	};
 	const handleUpdateAffairs = () => {
 		navigate('/upload-current-affairs');
@@ -83,48 +83,61 @@ const Dashboard = () => {
 		{label: 'Management', key: '4', icon: <UserOutlined/>, onClick: handleMenuClick},
 		{label: 'Medical', key: '5', icon: <UserOutlined/>, onClick: handleMenuClick},
 	];
-
+	const onMenuClick = ({key}) => {
+			if (key === '1') {
+				navigate('/dashboard');
+			} else if (key === '2') {
+				navigate('/live-test-questions');
+			} else if (key === 'sub1') {
+				navigate('/live-test-questions');
+			} else if (key === '3') {
+				navigate('/question-papers');
+			} else if (key === '4') {
+				navigate('/notes');
+			} else if (key === '5') {
+				navigate('/references');
+			} else if (key === '6') {
+				navigate('/upload-current-affairs');
+			}
+		};
 	return (
 		<Layout style={{minHeight: '100vh', minWidth: '100vw'}}>
-			<Sider width={200} style={{background: '#f4f4f4', paddingTop:20,boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)',}}>
-				<Menu style={{background:'#f4f4f4'}} defaultSelectedKeys={['1']} mode="inline">
-					<Menu.Item key="1">Overview</Menu.Item>
-					<Menu.SubMenu key="sub1" title="Management">
-						<Menu.Item key="2">Member</Menu.Item>
-						<Menu.Item key="3">Product List</Menu.Item>
-						<Menu.Item key="4">Partner List</Menu.Item>
+			<Sider width={200}
+				   style={{background: '#f4f4f4', paddingTop: 20, boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)',}}>
+				<Menu style={{background: '#f4f4f4'}} defaultSelectedKeys={['1']} mode="inline" onClick={onMenuClick} >
+					<Menu.Item key="1">Dashboard</Menu.Item>
+					<Menu.SubMenu key="sub1" title="Exams">
+						<Menu.Item key="2">Live Test Questions</Menu.Item>
+						<Menu.Item key="3">Question Papers</Menu.Item>
+						<Menu.Item key="4">Notes</Menu.Item>
+						<Menu.Item key="5">References</Menu.Item>
 					</Menu.SubMenu>
-					<Menu.Item key="5">Analytics</Menu.Item>
-					<Menu.Item key="6">Accounting</Menu.Item>
-					<Menu.Item key="7">Reports</Menu.Item>
-					<Menu.Item key="8">Settings</Menu.Item>
+					<Menu.Item key="6">Current Affairs</Menu.Item>
 				</Menu>
 			</Sider>
 			<Layout>
-				<Header style={{background: colorBgContainer,boxShadow: '0 8px 16px rgba(2, 2, 2, 0.1)'}}>
+				<Header style={{background: colorBgContainer}}>
 					<div style={{textAlign: 'center', color: 'black', fontSize: 32, fontWeight: 'bold'}}>BidYa Admin
 						Portal
 					</div>
 				</Header>
-				<Layout style={{padding: '24px 24px 24px'}}>
+				<Layout style={{padding: '24px 24px 24px', flexDirection: 'row', gap: 24}}>
 					<Content
 						style={{
-							padding: 24,
+							// width:50,
+							padding: 0,
 							margin: 0,
 							minHeight: 280,
 							background: colorBgContainer,
 							borderRadius: borderRadiusLG,
 						}}
 					>
-						<div
-							style={{
-								minHeight: '90vh',
-								background: colorBgContainer,
-								borderRadius: borderRadiusLG,
-								padding: '16px',
-							}}
-						>
-							<div>
+						<div style={{color: 'black', fontSize: 24, padding: '24px 24px 0'}}>
+							Exams Section
+						</div>
+						<hr style={{margin: '20px 0', border: 'none', borderTop: '1px solid #e0e0e0'}}/>
+						<div style={{padding: '0 24px 0'}}>
+							<div style={{marginTop: 16, display: 'flex', justifyContent: 'space-between'}}>
 								<Dropdown
 									menu={{
 										items: masterCategoryItems,
@@ -140,7 +153,7 @@ const Dashboard = () => {
 										</Space>
 									</a>
 								</Dropdown>
-								<div style={styles.gapBetweenDropdowns}></div>
+								{/*<div style={styles.gapBetweenDropdowns}></div>*/}
 								<Dropdown
 									menu={{
 										items: examCategories.map((item) => ({...item, onClick: handleExamMenuClick})), // Populate items dynamically
@@ -151,56 +164,102 @@ const Dashboard = () => {
 									<a onClick={(e) => e.preventDefault()}>
 										<Space>
 											<Button disabled={selectedMasterCategory === 'Select master category'}>
-												{selectedExamCategory} {/* Display selected exam category here */}
+												{selectedExamCategory}
 												<DownOutlined/>
 											</Button>
 										</Space>
 									</a>
 								</Dropdown>
-								<Row style={{height: '90vh', justifyContent: 'space-evenly', paddingTop: 40}}>
-									<Col style={{width: '100vw', borderRadius: 16}} span={11}>
-										<div
-											style={{
-												background: '#d1d5db',
-												height: '60vh',
-												alignContent: 'center',
-												borderRadius: 16,
-											}}
-										>
-											<p style={{textAlign: 'center'}}>UPLOAD Q/A FILE FOR PREVIEW</p>
-										</div>
-										<div style={{marginTop: 16, display: 'flex', justifyContent: 'space-between'}}>
-											<Button onClick={handleUploadQuestions}>EDIT BEFORE CONFIRMATION</Button>
-											<Button>CONFIRM</Button>
-										</div>
-									</Col>
-									<Col style={{width: '100vw', borderRadius: 16}} span={11}>
-										<div
-											style={{
-												background: '#d1d5db',
-												height: '60vh',
-												alignContent: 'center',
-												borderRadius: 16,
-											}}
-										>
-											<p style={{textAlign: 'center'}}>UPLOAD Q/A FILE FOR PREVIEW</p>
-										</div>
-										<div style={{marginTop: 16, display: 'flex', justifyContent: 'space-between'}}>
-											<Button onClick={handleUpdateAffairs}>EDIT BEFORE CONFIRMATION</Button>
-											<Button>CONFIRM</Button>
-										</div>
-									</Col>
-								</Row>
-								<Button
-									style={{
-										alignSelf: 'center'
+							</div>
+						</div>
+						<div style={{padding: '0 24px 0'}}>
+
+							<div style={{color: 'black', fontSize: 18, padding: '24px 0 0'}}>
+								Upload Questions
+							</div>
+							<div
+								style={{
+									background: '#d1d5db',
+									height: 200,
+									alignContent: 'center',
+									borderRadius: 16,
+									width: 400
+								}}
+							>
+								<p style={{textAlign: 'center'}}>UPLOAD Q/A FILE FOR PREVIEW</p>
+							</div>
+							<div style={{marginTop: 16, display: 'flex', justifyContent: 'space-between'}}>
+								<Button onClick={handleUploadQuestions}>EDIT BEFORE CONFIRMATION</Button>
+								<Button>CONFIRM</Button>
+							</div>
+						</div>
+					</Content>
+					<Content
+						style={{
+							// width:50,
+							padding: 0,
+							margin: 0,
+							minHeight: 280,
+							background: colorBgContainer,
+							borderRadius: borderRadiusLG,
+						}}
+					>
+						<div style={{color: 'black', fontSize: 24, padding: '24px 24px 0'}}>
+							Current Affairs Section
+						</div>
+						<hr style={{margin: '20px 0', border: 'none', borderTop: '1px solid #e0e0e0'}}/>
+						<div style={{padding: '0 24px 0'}}>
+							<div style={{marginTop: 16, display: 'flex', justifyContent: 'space-between'}}>
+								<Dropdown
+									menu={{
+										items: masterCategoryItems,
 									}}
-									onClick={() => {
-										alert('Successfully submitted');
-									}}
+									trigger={['click']}
 								>
-									CONFIRM AND SUBMIT
-								</Button>
+									<a onClick={(e) => e.preventDefault()}>
+										<Space>
+											<Button>
+												{selectedMasterCategory} {/* Display selected category here */}
+												<DownOutlined/>
+											</Button>
+										</Space>
+									</a>
+								</Dropdown>
+								{/*<div style={styles.gapBetweenDropdowns}></div>*/}
+								<Dropdown
+									menu={{
+										items: examCategories.map((item) => ({...item, onClick: handleExamMenuClick})), // Populate items dynamically
+									}}
+									trigger={['click']}
+									disabled={selectedMasterCategory === 'Select master category'} // Disable if no master category is selected
+								>
+									<a onClick={(e) => e.preventDefault()}>
+										<Space>
+											<Button disabled={selectedMasterCategory === 'Select master category'}>
+												{selectedExamCategory}
+												<DownOutlined/>
+											</Button>
+										</Space>
+									</a>
+								</Dropdown>
+							</div>
+							<div style={{color: 'black', fontSize: 18, padding: '24px 0 0'}}>
+								Upload Current Affairs
+							</div>
+							<div
+								style={{
+									background: '#d1d5db',
+									height: 200,
+									alignContent: 'center',
+									borderRadius: 16,
+									width: 400
+								}}
+							>
+								<p style={{textAlign: 'center'}}>UPLOAD Q/A FILE FOR PREVIEW</p>
+							</div>
+							<div style={{marginTop: 16, display: 'flex', justifyContent: 'space-between'}}>
+								<Button onClick={handleUpdateAffairs}>EDIT BEFORE CONFIRMATION</Button>
+								<Button>CONFIRM</Button>
 							</div>
 						</div>
 					</Content>
