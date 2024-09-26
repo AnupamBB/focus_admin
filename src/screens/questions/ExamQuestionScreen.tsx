@@ -65,8 +65,9 @@ const ExamQuestionScreen = () => {
 		setQuestions(updatedQuestions);
 	};
 
-	const handleSubmitAll = () => {
+	const handleSubmitAll = async () => {
 		let isValid = true;
+
 		questions.forEach((question, index) => {
 			if (!question.question.trim()) {
 				message.error(`Question ${index + 1} is missing.`);
@@ -86,17 +87,49 @@ const ExamQuestionScreen = () => {
 		});
 
 		if (isValid) {
-			console.log('Submitted Questions: ', questions);
-			message.success('All questions submitted successfully');
+			const payload = {
+				action: "create",
+				questions: questions.map((question) => ({
+					question: question.question,
+					description: question.description,
+					options: question.options.map((opt) => ({value: opt.value, correct: opt.correct})),
+					correctOption: question.correctOption,
+				}))
+			};
+			console.log(payload)
 
-			setQuestions([{
-				question: '',
-				description: '',
-				options: [{value: '', correct: false}],
-				correctOption: null,
-			}]);
+			try {
+				const response = await fetch('https://examappbackend.onrender.com/api/v1/app/admin/questions', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(payload),
+				});
+
+				if (response.ok) {
+					const responseData = await response.json();
+					console.log('Response from server:', responseData);
+					message.success('All questions submitted successfully');
+
+					setQuestions([{
+						question: '',
+						description: '',
+						options: [{value: '', correct: false}],
+						correctOption: null,
+					}]);
+				} else {
+					const errorResponse = await response.json();
+					console.error('Error response:', errorResponse);
+					message.error('Failed to submit questions');
+				}
+			} catch (error) {
+				console.error('Error submitting questions:', error);
+				message.error('An error occurred while submitting');
+			}
 		}
 	};
+
 
 	const onMenuClick = ({key}) => {
 		if (key === '1') {

@@ -42,11 +42,35 @@ const QuestionPapers = () => {
 		setNotes(updatedNotes);
 	};
 
-	const handleSubmitAll = () => {
-		console.log('All notes submitted:', notes);
+	const getBase64 = (file) => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = (error) => reject(error);
+		});
+	};
 
-		setNotes([{title: '', pdfFile: []}]);
-		message.success('All notes submitted successfully');
+	const handleSubmitAll = async () => {
+		try {
+			const note = notes[0];
+			const base64Pdf = note.pdfFile.length > 0 ? await getBase64(note.pdfFile[0].originFileObj) : "";
+
+			const payload = {
+				title: note.title,
+				pdfFile: base64Pdf.split(",")[1]
+			};
+
+			console.log('Payload:', payload);
+
+			// Perform your API submission here if needed
+
+			setNotes([{title: '', pdfFile: []}]);
+			message.success('All notes submitted successfully');
+		} catch (error) {
+			console.error('Error submitting notes:', error);
+			message.error('An error occurred while submitting');
+		}
 	};
 
 	const onMenuClick = ({key}) => {

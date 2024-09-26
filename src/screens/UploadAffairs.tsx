@@ -66,22 +66,6 @@ const UploadAffairs = () => {
 		setAffairs(updatedAffairs);
 	};
 
-	const handleAddMore = () => {
-		setAffairs([
-			...affairs,
-			{
-				date: null,
-				classification: '',
-				title: '',
-				description: '',
-				image: [],
-				showInput: false,
-				newOptionValue: '',
-				selectDisabled: false
-			}
-		]);
-	};
-
 	const handleDeleteAffair = (index) => {
 		const updatedAffairs = [...affairs];
 		updatedAffairs.splice(index, 1);
@@ -94,25 +78,60 @@ const UploadAffairs = () => {
 		setAffairs(updatedAffairs);
 	};
 
-	const handleFileChange = (index, {fileList}) => {
+	const getBase64 = (file) => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = (error) => reject(error);
+		});
+	};
+
+	const handleFileChange = async (index, {fileList}) => {
 		const updatedAffairs = [...affairs];
-		updatedAffairs[index].image = fileList.slice(-1);
+		if (fileList.length > 0) {
+			const base64Image = await getBase64(fileList[0].originFileObj);
+			updatedAffairs[index].image = [{...fileList[0], base64: base64Image}]; // store image as base64
+		} else {
+			updatedAffairs[index].image = [];
+		}
 		setAffairs(updatedAffairs);
 	};
 
-	const handleSubmitAll = () => {
-		console.log('All affairs submitted:', affairs);
-		setAffairs([{
-			date: null,
-			classification: '',
-			title: '',
-			description: '',
-			image: [],
-			showInput: false,
-			newOptionValue: '',
-			selectDisabled: false
-		}]);
-		message.success('All affairs submitted successfully');
+	const handleSubmitAll = async () => {
+		try {
+			const currentAffair = affairs[0];
+			const payload = {
+				action: "create",
+				title: currentAffair.title,
+				currentAffImg: currentAffair.image.length > 0 ? currentAffair.image[0].base64.split(",")[1] : "",
+				description: currentAffair.description,
+				date_of_event: currentAffair.date ? currentAffair.date.format('YYYY-MM-DD') : '',
+				category: currentAffair.classification
+			};
+			console.log(payload)
+
+			const response = await fetch('https://examappbackend.onrender.com/api/v1/app/admin/current-affairs', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(payload),
+			});
+
+			if (response.ok) {
+				const responseData = await response.json();
+				console.log('Response from server:', responseData);
+				message.success('Current affair submitted successfully');
+			} else {
+				const errorResponse = await response.json();
+				console.error('Error response:', errorResponse);
+				message.error('Failed to submit current affair');
+			}
+		} catch (error) {
+			console.error('Error submitting current affair:', error);
+			message.error('An error occurred while submitting');
+		}
 	};
 
 
@@ -291,13 +310,6 @@ const UploadAffairs = () => {
 								</Form>
 							</div>
 						))}
-
-						<Form.Item style={{display: 'flex', justifyContent: 'center'}}>
-							<Button type="primary" onClick={handleAddMore} style={{width: '100%'}}>
-								Add More
-							</Button>
-						</Form.Item>
-
 						<Form.Item style={{display: 'flex', justifyContent: 'center'}}>
 							<Button type="primary" onClick={handleSubmitAll} style={{width: '100%'}}>
 								Submit All Affairs

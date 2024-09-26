@@ -36,16 +36,62 @@ const References = () => {
 		setReferences(updatedReferences); // Auto-save the specific reference's title, link, or image
 	};
 
-	const handleFileChange = (index, {fileList}) => {
+	const getBase64 = (file) => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = (error) => reject(error);
+		});
+	};
+
+	const handleFileChange = async (index, {fileList}) => {
 		const updatedReferences = [...references];
-		updatedReferences[index].image = fileList.slice(-1); // Only allow 1 image
+		if (fileList.length > 0) {
+			const base64Image = await getBase64(fileList[0].originFileObj);
+			updatedReferences[index].image = [{...fileList[0], base64: base64Image}]; // store image as base64
+		} else {
+			updatedReferences[index].image = [];
+		}
 		setReferences(updatedReferences);
 	};
 
-	const handleSubmitAll = () => {
-		console.log('All references submitted:', references);
+	const handleSubmitAll = async () => {
+		try {
+			const reference = references[0];
+			const payload = {
+				action: "create",
+				title: reference.title,
+				referenceImg: reference.image.length > 0 ? reference.image[0].base64.split(",")[1] : "",
+				link: reference.link
+			};
+
+			console.log(payload);
+
+			const response = await fetch('https://examappbackend.onrender.com/api/v1/app/admin/references', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(payload),
+			});
+
+			if (response.ok) {
+				const responseData = await response.json();
+				console.log('Response from server:', responseData);
+				message.success('Reference submitted successfully');
+			} else {
+				const errorResponse = await response.json();
+				console.error('Error response:', errorResponse);
+				message.error('Failed to submit reference');
+			}
+		} catch (error) {
+			console.error('Error submitting reference:', error);
+			message.error('An error occurred while submitting');
+		}
+
 		setReferences([{title: '', link: '', image: []}]);
-		message.success('All notes submitted successfully');	};
+	};
 
 	const onMenuClick = ({key}) => {
 		if (key === '1') {
@@ -133,7 +179,7 @@ const References = () => {
 										</Form.Item>
 
 									</div>
-									<div style={{ display: 'flex'}}>
+									<div style={{display: 'flex'}}>
 										<Form.Item valuePropName="fileList" getValueFromEvent={normFile}>
 											<Upload
 												action="/upload.do"
