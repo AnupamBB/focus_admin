@@ -19,7 +19,7 @@ const Login = () => {
 
 	const handleLogin = () => {
 		// Navigate to the dashboard after "Login"
-		navigate('/dashboard');
+		navigate('/live-test-questions');
 	};
 
 	const styles = {
