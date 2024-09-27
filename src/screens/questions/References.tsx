@@ -48,9 +48,7 @@ const References = () => {
 		message.success('All notes submitted successfully');	};
 
 	const onMenuClick = ({key}) => {
-		if (key === '1') {
-			navigate('/dashboard');
-		} else if (key === '2') {
+		 if (key === '2') {
 			navigate('/live-test-questions');
 		} else if (key === '3') {
 			navigate('/question-papers');
@@ -70,7 +68,6 @@ const References = () => {
 				style={{background: '#f4f4f4', paddingTop: 20, boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)'}}
 			>
 				<Menu style={{background: '#f4f4f4'}} defaultSelectedKeys={['1']} mode="inline" onClick={onMenuClick}>
-					<Menu.Item key="1">Dashboard</Menu.Item>
 					<Menu.SubMenu key="sub1" title="Exams">
 						<Menu.Item key="2">Live Test Questions</Menu.Item>
 						<Menu.Item key="3">Question Papers</Menu.Item>
