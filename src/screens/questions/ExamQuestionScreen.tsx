@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import {useState} from "react";
 import {PlusOutlined, DeleteOutlined, DownOutlined, UserOutlined} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import {Layout, Menu, Button, Form, Input, Radio, message, Dropdown, Space, MenuProps} from "antd";
@@ -37,15 +37,15 @@ const ExamQuestionScreen = () => {
 	};
 	const handleMenuClick: MenuProps['onClick'] = (e) => {
 		const selectedMaster = e.domEvent.currentTarget.innerText;
-		setSelectedMasterCategory(selectedMaster); // Update selected category
-		setExamCategories(examCategoryMap[selectedMaster]); // Set exam categories based on master category
-		setSelectedExamCategory('Select exam category'); // Reset exam category after master category selection
+		setSelectedMasterCategory(selectedMaster);
+		setExamCategories(examCategoryMap[selectedMaster]);
+		setSelectedExamCategory('Select exam category');
 		message.info(`Selected ${selectedMaster}`);
 	};
 
 	const handleExamMenuClick: MenuProps['onClick'] = (e) => {
 		const selectedExam = e.domEvent.currentTarget.innerText;
-		setSelectedExamCategory(selectedExam); // Update selected exam category
+		setSelectedExamCategory(selectedExam);
 		message.info(`Selected ${selectedExam}`);
 	};
 
@@ -67,8 +67,6 @@ const ExamQuestionScreen = () => {
 		},
 	]);
 	const [jsonInput, setJsonInput] = useState("");
-
-	// Parse JSON input and update questions state
 	const handleJsonSubmit = () => {
 		try {
 			const parsedQuestions = JSON.parse(jsonInput);
