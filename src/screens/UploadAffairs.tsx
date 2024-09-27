@@ -179,7 +179,7 @@ const UploadAffairs = () => {
 								padding: '20px'
 							}}>
 								<Form style={{
-									width: '70%',
+									minWidth: "40vw",
 									display: 'flex',
 									flexDirection: 'row',
 									gap: '20px',
@@ -189,20 +189,33 @@ const UploadAffairs = () => {
 									borderRadius: '8px',
 								}}>
 									<div style={{flex: 2}}>
-										<Form.Item label={`Current Affair Date ${index + 1}`}>
+										<Form.Item label={`Current Affair Date ${index + 1}`} labelCol={{
+											style: {
+												display: "flex",
+												width: "140px",
+												alignItems: "start",
+											},
+										}}>
 											<DatePicker
-												style={{width: '100%'}}
+												style={{width: '360px'}}
 												value={affair.date}
 												onChange={(date) => handleChange(index, 'date', date)}
 											/>
 										</Form.Item>
-										<Form.Item label="Select Classification">
+										<Form.Item label="Select Classification" labelCol={{
+											style: {
+												display: "flex",
+												width: "140px",
+												alignItems: "start",
+											},
+										}}>
 											<Select
 												placeholder="Please select"
 												onChange={(value) => handleSelectChange(index, value)}
 												value={affair.classification}
-												style={{width: '100%'}}
+												style={{width: '360px'}}
 												disabled={affair.selectDisabled}
+
 											>
 												{options.map((option) => (
 													<Select.Option key={option.value} value={option.value}>
@@ -228,7 +241,7 @@ const UploadAffairs = () => {
 													placeholder="Enter new classification"
 													value={affair.newOptionValue}
 													onChange={(e) => handleChange(index, 'newOptionValue', e.target.value)}
-													style={{width: 200}}
+													style={{width: '360px'}}
 												/>
 												<Button type="primary" onClick={() => handleSaveNewOption(index)}>
 													Save
@@ -237,21 +250,33 @@ const UploadAffairs = () => {
 											</div>
 										)}
 
-										<Form.Item label="Enter Title">
+										<Form.Item label="Enter Title" labelCol={{
+											style: {
+												display: "flex",
+												width: "140px",
+												alignItems: "start",
+											},
+										}}>
 											<Input
 												placeholder="Enter Title"
 												value={affair.title}
 												onChange={(e) => handleChange(index, 'title', e.target.value)}
-												style={{width: '100%'}}
+												style={{width: '360px'}}
 											/>
 										</Form.Item>
 
-										<Form.Item label="Enter Description">
+										<Form.Item label="Enter Description" labelCol={{
+											style: {
+												display: "flex",
+												width: "140px",
+												alignItems: "start",
+											},
+										}}>
 											<TextArea
 												rows={4}
 												value={affair.description}
 												onChange={(e) => handleChange(index, 'description', e.target.value)}
-												style={{width: '100%'}}
+												style={{width: '360px'}}
 											/>
 										</Form.Item>
 									</div>

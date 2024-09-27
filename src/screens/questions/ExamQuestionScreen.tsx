@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {PlusOutlined, DeleteOutlined, DownOutlined, UserOutlined} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
-import {Layout, Menu, Button, Form, Input, Radio, message, Dropdown, Space, MenuProps} from "antd";
+import {Layout, Menu, Button, Form, Input, Radio, message, Dropdown, Space, MenuProps, Upload} from "antd";
 import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
 
@@ -11,6 +11,19 @@ const ExamQuestionScreen = () => {
 	const navigate = useNavigate();
 	const [selectedMasterCategory, setSelectedMasterCategory] = useState('Select master category');
 	const [examCategories, setExamCategories] = useState([]);
+	const [globalPositiveMark, setGlobalPositiveMark] = useState();
+	const [globalNegativeMark, setGlobalNegativeMark] = useState();
+	const [image, setImage] = useState(null);
+
+	const applyMarksToAll = () => {
+		const updatedQuestions = questions.map((q) => ({
+			...q,
+			positiveMark: globalPositiveMark,
+			negativeMark: globalNegativeMark
+		}));
+		setQuestions(updatedQuestions);
+		message.success("Marks applied to all questions");
+	};
 
 	const examCategoryMap = {
 		Engineering: [
@@ -124,15 +137,21 @@ const ExamQuestionScreen = () => {
 				description: "",
 				options: [{value: "", correct: false}],
 				correctOption: null,
+				positiveMark: 1,
+				negativeMark: 0
 			},
 		]);
 	};
 
 	const handleDeleteQuestion = (questionIndex) => {
-		const updatedQuestions = questions.filter(
-			(_, index) => index !== questionIndex
-		);
-		setQuestions(updatedQuestions);
+		if (questions.length > 1) {
+			const updatedQuestions = questions.filter(
+				(_, index) => index !== questionIndex
+			);
+			setQuestions(updatedQuestions);
+		} else {
+			message.error("At least one question is required.");
+		}
 	};
 
 	const handleDeleteOption = (questionIndex, optionIndex) => {
@@ -147,8 +166,30 @@ const ExamQuestionScreen = () => {
 		}
 	};
 
+	const handleImageUpload = (file) => {
+		setImage(file);
+		return false;
+	};
+
+	const handleRemoveImage = () => {
+		setImage(null);
+	};
+
+
 	const handleSubmitAll = () => {
 		let isValid = true;
+
+		if (selectedMasterCategory === 'Select master category') {
+			message.error('Please select a master category.');
+			isValid = false;
+			return;
+		}
+		if (selectedExamCategory === 'Select exam category') {
+			message.error('Please select an exam category.');
+			isValid = false;
+			return;
+		}
+
 		questions.forEach((question, index) => {
 			if (!question.question.trim()) {
 				message.error(`Question ${index + 1} is missing.`);
@@ -156,24 +197,42 @@ const ExamQuestionScreen = () => {
 				return;
 			}
 			if (question.options.length < 2) {
-				message.error(
-					`Question ${index + 1} must have at least two options.`
-				);
+				message.error(`Question ${index + 1} must have at least two options.`);
 				isValid = false;
 				return;
 			}
 			if (question.correctOption === null) {
-				message.error(
-					`Please select a correct option for Question ${index + 1}.`
-				);
+				message.error(`Please select a correct option for Question ${index + 1}.`);
+				isValid = false;
+				return;
+			}
+			if (question.positiveMark === undefined || question.negativeMark === undefined) {
+				message.error(`Please provide marks for Question ${index + 1}.`);
 				isValid = false;
 				return;
 			}
 		});
 
 		if (isValid) {
-			console.log("Submitted Questions: ", questions);
-			message.success("All questions submitted successfully");
+			const payload = {
+				masterCategory: selectedMasterCategory,
+				examCategory: selectedExamCategory,
+				image,
+				questions: questions.map(q => ({
+					question: q.question,
+					description: q.description,
+					options: q.options.map(opt => ({
+						value: opt.value,
+						correct: opt.correct,
+					})),
+					correctOption: q.correctOption,
+					positiveMark: q.positiveMark,
+					negativeMark: q.negativeMark
+				}))
+			};
+
+			console.log("Submitted Data: ", payload);
+			message.success("All data submitted successfully");
 		}
 	};
 
@@ -255,55 +314,6 @@ const ExamQuestionScreen = () => {
 							}}
 						/>
 
-						{/* SELECT CATEGORY */}
-						<div style={{
-							display: 'flex',
-							justifyContent: 'center',
-							alignItems: 'center',
-						}}>
-							<div style={{padding: '0 0 0', width: "40vw"}}>
-								<div style={{
-									display: 'flex',
-									justifyContent: 'space-between',
-									alignItems: 'center'
-								}}>
-									<Dropdown
-										menu={{items: masterCategoryItems}}
-										trigger={['click']}
-									>
-										<a onClick={(e) => e.preventDefault()}>
-											<Space>
-												<Button>
-													{selectedMasterCategory}
-													<DownOutlined/>
-												</Button>
-											</Space>
-										</a>
-									</Dropdown>
-
-									<Dropdown
-										menu={{
-											items: examCategories.map((item) => ({
-												...item,
-												onClick: handleExamMenuClick
-											}))
-										}}
-										trigger={['click']}
-										disabled={selectedMasterCategory === 'Select master category'}
-									>
-										<a onClick={(e) => e.preventDefault()}>
-											<Space>
-												<Button disabled={selectedMasterCategory === 'Select master category'}>
-													{selectedExamCategory}
-													<DownOutlined/>
-												</Button>
-											</Space>
-										</a>
-									</Dropdown>
-								</div>
-							</div>
-						</div>
-
 						<div
 							style={{
 								display: "flex",
@@ -358,6 +368,125 @@ const ExamQuestionScreen = () => {
 							</Form.Item>
 						</div>
 
+						<div
+							style={{
+								display: "flex",
+								justifyContent: "center",
+								flexDirection: "row",
+								marginBottom: "20px",
+								padding: "20px",
+							}}
+						>
+							<Form
+								style={{
+									minWidth: "40vw",
+									display: "flex",
+									flexDirection: "row",
+									gap: "20px",
+									alignItems: "center",
+									border: "1px solid #e0e0e0",
+									padding: 20,
+									borderRadius: "8px",
+								}}
+							>
+								<div style={{flex: 2}}>
+									<Form.Item
+										labelCol={{
+											style: {
+												display: "flex",
+												width: "140px",
+											},
+										}}
+									>
+										<div
+											style={{
+												display: "flex",
+												justifyContent:
+													"space-between",
+												width: "100%",
+											}}
+										>
+											<Dropdown
+												menu={{items: masterCategoryItems}}
+												trigger={['click']}
+											>
+												<a onClick={(e) => e.preventDefault()}>
+													<Space>
+														<Button>
+															{selectedMasterCategory}
+															<DownOutlined/>
+														</Button>
+													</Space>
+												</a>
+											</Dropdown>
+											<Dropdown
+												menu={{
+													items: examCategories.map((item) => ({
+														...item,
+														onClick: handleExamMenuClick
+													}))
+												}}
+												trigger={['click']}
+												disabled={selectedMasterCategory === 'Select master category'}
+											>
+												<a onClick={(e) => e.preventDefault()}>
+													<Space>
+														<Button
+															disabled={selectedMasterCategory === 'Select master category'}>
+															{selectedExamCategory}
+															<DownOutlined/>
+														</Button>
+													</Space>
+												</a>
+											</Dropdown>
+										</div>
+										<div style={{
+											display: "flex",
+											justifyContent: "space-between",
+											width: "100%",
+											marginTop: '20px'
+										}}>
+											<Input
+												placeholder="Positive Mark"
+												type="number"
+												value={globalPositiveMark}
+												onChange={(e) => setGlobalPositiveMark(Number(e.target.value))}
+												style={{width: '150px'}}
+											/>
+											<Input
+												placeholder="Negative Mark"
+												type="number"
+												value={globalNegativeMark}
+												onChange={(e) => setGlobalNegativeMark(Number(e.target.value))}
+												style={{width: '150px'}}
+											/>
+											<Button type="primary" onClick={applyMarksToAll}>
+												Apply Marks to All
+											</Button>
+										</div>
+									</Form.Item>
+								</div>
+								<Form.Item valuePropName="fileList">
+									<Upload
+										action="/upload.do"
+										listType="picture-card"
+										beforeUpload={handleImageUpload}
+										maxCount={1}
+										onRemove={handleRemoveImage}
+										fileList={image ? [image] : []}
+									>
+										{!image && (
+											<button style={{border: 0, background: 'none'}} type="button">
+												<PlusOutlined/>
+												<div style={{marginTop: 8}}>Upload Image</div>
+											</button>
+										)}
+									</Upload>
+
+								</Form.Item>
+							</Form>
+						</div>
+
 						{questions.map((question, questionIndex) => (
 							<div
 								key={questionIndex}
@@ -371,7 +500,7 @@ const ExamQuestionScreen = () => {
 							>
 								<Form
 									style={{
-										minWidth: "32vw",
+										minWidth: "40vw",
 										display: "flex",
 										flexDirection: "row",
 										gap: "20px",
@@ -498,12 +627,70 @@ const ExamQuestionScreen = () => {
 													</div>
 												)
 											)}
+
 										</Form.Item>
 										<div
-											style={{display: 'flex', justifyContent: "center",}}>
+											style={{display: 'flex', justifyContent: "center", marginBottom: '30px'}}>
 											<Button type="dashed" onClick={() => handleAddOption(questionIndex)}>
 												<PlusOutlined/> Add Option
-											</Button></div>
+											</Button>
+										</div>
+										<div
+											style={{display: 'flex',}}>
+											<Form.Item
+												label="Marks"
+												labelCol={{
+													style: {
+														display: "flex",
+														width: "140px",
+														alignItems: "start",
+													},
+												}}
+											>
+												<div
+													style={{
+														display: "flex",
+														alignItems:
+															"center",
+														gap: "10px",
+														marginBottom:
+															"10px",
+													}}
+												>
+													<Input
+														placeholder={`Positive Marks`}
+														type="number"
+														value={question.positiveMark}
+														onChange={(e) =>
+															handleQuestionChange(
+																questionIndex,
+																"positiveMark",
+																e.target.value
+															)
+														}
+														style={{
+															width: "300px",
+														}}
+													/>
+
+												</div>
+												<Input
+													placeholder={`Negative Marks`}
+													type="number"
+													value={question.negativeMark}
+													onChange={(e) =>
+														handleQuestionChange(
+															questionIndex,
+															"negativeMark",
+															e.target.value
+														)
+													}
+													style={{
+														width: "300px",
+													}}
+												/>
+											</Form.Item>
+										</div>
 									</div>
 								</Form>
 							</div>
