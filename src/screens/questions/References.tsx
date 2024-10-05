@@ -1,57 +1,69 @@
-import React, {useState} from 'react';
-import {PlusOutlined, DeleteOutlined} from '@ant-design/icons';
-import {useNavigate} from 'react-router-dom';
-import {Layout, Menu, theme, Button, Upload, Input, Form, message} from 'antd';
-import '../styles.css';
+import React, { useState } from "react";
+import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import {
+    Layout,
+    Menu,
+    theme,
+    Button,
+    Upload,
+    Input,
+    Form,
+    message,
+} from "antd";
+import "../styles.css";
 
-const {Header, Content, Sider} = Layout;
+const { Header, Content, Sider } = Layout;
 
 const References = () => {
-	const [references, setReferences] = useState([{title: '', link: '', image: []}]); // Array to store references
-	const navigate = useNavigate();
-	const {
-		token: {colorBgContainer, borderRadiusLG},
-	} = theme.useToken();
+    const [references, setReferences] = useState([
+        { title: "", link: "", image: [] },
+    ]); // Array to store references
+    const navigate = useNavigate();
+    const {
+        token: { colorBgContainer, borderRadiusLG },
+    } = theme.useToken();
 
-	const normFile = (e: any) => {
-		if (Array.isArray(e)) {
-			return e;
-		}
-		return e?.fileList;
-	};
+    const normFile = (e: any) => {
+        if (Array.isArray(e)) {
+            return e;
+        }
+        return e?.fileList;
+    };
 
-	const handleChange = (index, field, value) => {
-		const updatedReferences = [...references];
-		updatedReferences[index][field] = value;
-		setReferences(updatedReferences);
-	};
+    const handleChange = (index, field, value) => {
+        const updatedReferences = [...references];
+        updatedReferences[index][field] = value;
+        setReferences(updatedReferences);
+    };
 
-	const handleFileChange = (index, {fileList}) => {
-		const updatedReferences = [...references];
-		updatedReferences[index].image = fileList.slice(-1);
-		setReferences(updatedReferences);
-	};
+    const handleFileChange = (index, { fileList }) => {
+        const updatedReferences = [...references];
+        updatedReferences[index].image = fileList.slice(-1);
+        setReferences(updatedReferences);
+    };
 
-	const handleSubmitAll = () => {
-		console.log('All references submitted:', references);
-		setReferences([{title: '', link: '', image: []}]);
-		message.success('All notes submitted successfully');	};
+    const handleSubmitAll = () => {
+        console.log("All references submitted:", references);
+        setReferences([{ title: "", link: "", image: [] }]);
+        message.success("All notes submitted successfully");
+    };
 
-	const onMenuClick = ({key}) => {
-		 if (key === '2') {
-			navigate('/live-test-questions');
-		} else if (key === '3') {
-			navigate('/question-papers');
-		} else if (key === '4') {
-			navigate('/notes');
-		} else if (key === '5') {
-			navigate('/references');
-		} else if (key === '6') {
-			navigate('/upload-current-affairs');
-		}
-	};
+    const onMenuClick = ({ key }) => {
+        if (key === "2") {
+            navigate("/live-test-questions");
+        } else if (key === "3") {
+            navigate("/question-papers");
+        } else if (key === "4") {
+            navigate("/notes");
+        } else if (key === "5") {
+            navigate("/references");
+        } else if (key === "6") {
+            navigate("/upload-current-affairs");
+        }
+    };
 
-	return (
+    return (
         <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
             <Sider
                 width={200}
@@ -86,7 +98,7 @@ const References = () => {
                             fontWeight: "bold",
                         }}
                     >
-                        BidYa Admin Portal
+                        Focus Admin Portal
                     </div>
                 </Header>
                 <Layout
@@ -197,13 +209,13 @@ const References = () => {
                                             display: "flex",
                                             height: 200,
                                             minWidth: "580px",
-											justifyContent: 'center',
-											alignItems: 'center',
-											border: "2px dashed #d9d9d9",
-											background: "none",
-											width: "150px",
-											flexDirection: "column",
-											borderRadius: "8px",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            border: "2px dashed #d9d9d9",
+                                            background: "none",
+                                            width: "150px",
+                                            flexDirection: "column",
+                                            borderRadius: "8px",
                                         }}
                                     >
                                         <Form.Item
@@ -223,14 +235,9 @@ const References = () => {
                                                 maxCount={1}
                                             >
                                                 {reference.image.length < 1 && (
-                                                    <button
-                                                        type="button"
-                                                    >
+                                                    <button type="button">
                                                         <PlusOutlined />
-                                                        <div
-                                                        >
-                                                            Upload Image
-                                                        </div>
+                                                        <div>Upload Image</div>
                                                     </button>
                                                 )}
                                             </Upload>

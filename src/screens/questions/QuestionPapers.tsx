@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {InboxOutlined} from "@ant-design/icons";
+import { InboxOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
     Layout,
@@ -112,7 +112,7 @@ const QuestionPapers = () => {
                             fontWeight: "bold",
                         }}
                     >
-                        BidYa Admin Portal
+                        Focus Admin Portal
                     </div>
                 </Header>
                 <Layout

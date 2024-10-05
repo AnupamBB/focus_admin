@@ -19,12 +19,11 @@ import {
     MenuProps,
     Upload,
 } from "antd";
-import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
 
 const { Header, Content, Sider } = Layout;
 
-const ExamQuestionScreen = () => {
+const EditExamQuestion = () => {
     const navigate = useNavigate();
     const [selectedMasterCategory, setSelectedMasterCategory] = useState(
         "Select master category"
@@ -248,28 +247,6 @@ const ExamQuestionScreen = () => {
             correctOption: null,
         },
     ]);
-    const [jsonInput, setJsonInput] = useState("");
-    const handleJsonSubmit = () => {
-        try {
-            const parsedQuestions = JSON.parse(jsonInput);
-
-            const formattedQuestions = parsedQuestions.map((q) => ({
-                question: q.question,
-                description: q.description || "",
-                options: q.options.map((option) => ({
-                    value: option,
-                    correct: false,
-                })),
-                correctOption: null,
-            }));
-
-            setQuestions(formattedQuestions);
-            message.success("Questions populated successfully");
-        } catch (error) {
-            message.error("Invalid JSON format");
-        }
-    };
-
     const handleQuestionChange = (index, field, value) => {
         const updatedQuestions = [...questions];
         updatedQuestions[index][field] = value;
@@ -422,59 +399,6 @@ const ExamQuestionScreen = () => {
                                 borderTop: "1px solid #e0e0e0",
                             }}
                         />
-
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "center",
-                                flexDirection: "row",
-                                marginTop: "24px",
-                            }}
-                        >
-                            <iframe
-                                src="https://focus-mcq-extract.streamlit.app/?embedded=true"
-                                width="80%"
-                                height="500px"
-                            ></iframe>
-                        </div>
-
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                            }}
-                        >
-                            <Form.Item
-                                label="Paste JSON of Questions"
-                                labelCol={{
-                                    style: {
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        justifyContent: "start",
-                                        width: "100%",
-                                        marginBottom: "8px",
-                                    },
-                                }}
-                                style={{ paddingTop: "24px", minWidth: "40vw" }}
-                            >
-                                <TextArea
-                                    rows={6}
-                                    value={jsonInput}
-                                    onChange={(e) =>
-                                        setJsonInput(e.target.value)
-                                    }
-                                    placeholder='[{"question": "Question 1", "options": ["Option 1", "Option 2"]}, {"question": "Question 2", "options": ["Option A", "Option B"]}]'
-                                />
-                                <Button
-                                    style={{ marginTop: "24px" }}
-                                    type="primary"
-                                    onClick={handleJsonSubmit}
-                                >
-                                    Populate Questions
-                                </Button>
-                            </Form.Item>
-                        </div>
 
                         <div
                             style={{
@@ -902,4 +826,4 @@ const ExamQuestionScreen = () => {
     );
 };
 
-export default ExamQuestionScreen;
+export default EditExamQuestion;

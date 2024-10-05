@@ -1,7 +1,16 @@
 import { useState } from "react";
-import {InboxOutlined,} from "@ant-design/icons";
+import { InboxOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import {Layout, Menu, theme, Button, Upload, message, Form, Input} from "antd";
+import {
+    Layout,
+    Menu,
+    theme,
+    Button,
+    Upload,
+    message,
+    Form,
+    Input,
+} from "antd";
 import "../styles.css";
 
 const { Header, Content, Sider } = Layout;
@@ -14,7 +23,11 @@ const Notes = () => {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
 
-    const handleChange = (index: number,field: string,value: string | number | boolean) => {
+    const handleChange = (
+        index: number,
+        field: string,
+        value: string | number | boolean
+    ) => {
         const updatedNotes = [...notes];
         updatedNotes[index][field] = value;
         setNotes(updatedNotes);
@@ -103,7 +116,7 @@ const Notes = () => {
                             fontWeight: "bold",
                         }}
                     >
-                        BidYa Admin Portal
+                        Focus Admin Portal
                     </div>
                 </Header>
                 <Layout
@@ -208,7 +221,8 @@ const Notes = () => {
                                                     area to upload Notes
                                                 </p>
                                                 <p className="ant-upload-hint">
-                                                    Support for a single at a time
+                                                    Support for a single at a
+                                                    time
                                                 </p>
                                             </Dragger>
                                         </Form.Item>

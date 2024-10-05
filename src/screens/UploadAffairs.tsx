@@ -209,7 +209,7 @@ const UploadAffairs = () => {
                         fontWeight: "bold",
                     }}
                 >
-                    BidYa Admin Portal
+                    Focus Admin Portal
                 </Header>
                 <Layout style={{ padding: "24px 24px 24px" }}>
                     <Content
@@ -412,6 +412,7 @@ const UploadAffairs = () => {
                                                     display: "flex",
                                                     width: "140px",
                                                     alignItems: "start",
+													color: 'black',
                                                 },
                                             }}
                                         >

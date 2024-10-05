@@ -10,7 +10,7 @@ import {
     message,
 } from "antd";
 import { useNavigate } from "react-router-dom";
-
+import logo from "../assets/logo.jpg"
 const { Content } = Layout;
 const { Text, Title } = Typography;
 const { useToken } = theme;
@@ -41,7 +41,7 @@ const Login = () => {
                 throw new Error("Login failed!");
             }
             const result = await response.json();
-			const data = result.data;
+            const data = result.data;
 
             if (data.accessToken) {
                 localStorage.setItem("accessToken", data.accessToken);
@@ -63,16 +63,20 @@ const Login = () => {
             padding: screens.md
                 ? `${token.paddingXL}px`
                 : `${token.sizeXXL}px ${token.padding}px`,
-            width: "380px",
+            width: screens.sm ? "32%" : "400px",
+            background: token.colorBgContainer,
+            borderRadius: token.borderRadiusLG,
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
         },
         header: {
-            marginBottom: token.marginXL,
+            marginBottom: token.marginLG,
+            textAlign: "center",
         },
         section: {
             alignItems: "center",
-            backgroundColor: token.colorBgContainer,
             display: "flex",
-            height: screens.sm ? "100vh" : "auto",
+            justifyContent: "center",
+            height: "100vh",
             padding: screens.md ? `${token.sizeXXL}px 0px` : "0px",
         },
         text: {
@@ -82,6 +86,18 @@ const Login = () => {
             fontSize: screens.md
                 ? token.fontSizeHeading2
                 : token.fontSizeHeading3,
+            color: token.colorPrimary,
+        },
+        form: {
+            width: "100%",
+            padding: "0 20px",
+        },
+        button: {
+            backgroundColor: "#1890FF",
+            borderRadius: "5px",
+            color: "#fff",
+            fontWeight: "bold",
+            height: "45px",
         },
     };
 
@@ -92,43 +108,21 @@ const Login = () => {
                     <div
                         style={{
                             minHeight: "90vh",
-                            background: token.colorBgContainer,
-                            borderRadius: token.borderRadiusLG,
                         }}
                     >
                         <section style={styles.section}>
                             <div style={styles.container}>
                                 <div style={styles.header}>
-                                    <svg
-                                        width="25"
-                                        height="24"
-                                        viewBox="0 0 25 24"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <rect
-                                            x="0.464294"
-                                            width="24"
-                                            height="24"
-                                            rx="4.8"
-                                            fill="#1890FF"
-                                        />
-                                        <path
-                                            d="M14.8643 3.6001H20.8643V9.6001H14.8643V3.6001Z"
-                                            fill="white"
-                                        />
-                                        <path
-                                            d="M10.0643 9.6001H14.8643V14.4001H10.0643V9.6001Z"
-                                            fill="white"
-                                        />
-                                        <path
-                                            d="M4.06427 13.2001H11.2643V20.4001H4.06427V13.2001Z"
-                                            fill="white"
-                                        />
-                                    </svg>
-
+                                    <img
+                                        src={logo}
+                                        alt="Login Logo"
+                                        style={{
+                                            width: "100px",
+                                            // height: "100px",
+                                        }}
+                                    />
                                     <Title style={styles.title}>
-                                        BidYa Admin Portal
+                                        Focus Admin Portal
                                     </Title>
                                     <Text style={styles.text}>
                                         Enter your credentials to access your
@@ -141,6 +135,7 @@ const Login = () => {
                                     onFinish={onFinish}
                                     layout="vertical"
                                     requiredMark="optional"
+                                    style={styles.form}
                                 >
                                     <Form.Item
                                         name="email"
@@ -156,6 +151,7 @@ const Login = () => {
                                         <Input
                                             prefix={<MailOutlined />}
                                             placeholder="Email"
+                                            style={{ height: "40px" }}
                                         />
                                     </Form.Item>
                                     <Form.Item
@@ -171,6 +167,7 @@ const Login = () => {
                                         <Input.Password
                                             prefix={<LockOutlined />}
                                             placeholder="Password"
+                                            style={{ height: "40px" }}
                                         />
                                     </Form.Item>
                                     <Form.Item style={{ marginBottom: "0px" }}>
@@ -178,6 +175,7 @@ const Login = () => {
                                             block
                                             type="primary"
                                             htmlType="submit"
+                                            style={styles.button}
                                         >
                                             Log in
                                         </Button>
