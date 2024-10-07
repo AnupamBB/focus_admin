@@ -1,134 +1,158 @@
-import React, { useState } from "react";
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useState, useEffect } from "react";
+import { PlusOutlined} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
-    Layout,
-    Menu,
-    Button,
-    DatePicker,
-    Form,
-    Input,
-    Upload,
-    Select,
-    message,
+	Layout,
+	Menu,
+	Button,
+	DatePicker,
+	Form,
+	Input,
+	Upload,
+	Select,
+	Dropdown,
+	Space,
+	message,
 } from "antd";
-import "./styles.css";
+import "../styles.css";
 import TextArea from "antd/es/input/TextArea";
+import { DownOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 
 const { Header, Content, Sider } = Layout;
 
-const UploadAffairs = () => {
-    const navigate = useNavigate();
-    const [options, setOptions] = useState([
-        { value: "world", label: "World" },
-        { value: "india", label: "India" },
-        { value: "Environment", label: "Environment" },
-        { value: "assam", label: "Assam" },
-    ]);
+const EditAffairs = () => {
+	const navigate = useNavigate();
+	
+	const [title, setTitle] = useState("Select a Title");
+	const [date, setDate] = useState(null);
+	const [des, setDes] = useState(null);
+	const [cat, setCat] = useState(null);     
+	const [selectedAffairId, setSelectedAffairId] = useState(null);     
 
-    const [affairs, setAffairs] = useState([
-        {
-            date_of_event: null,
-            category: "",
-            title: "",
-            description: "",
-            currentAffImg: [],
-            showInput: false,
-            newOptionValue: "",
-            selectDisabled: false,
-        },
-    ]);
 
-    const handleSelectChange = (index, value) => {
-        const updatedAffairs = [...affairs];
-        if (value === "add_new") {
-            updatedAffairs[index].showInput = true;
-            updatedAffairs[index].selectDisabled = true;
-        } else {
-            updatedAffairs[index].category = value;
-        }
-        setAffairs(updatedAffairs);
-    };
+	const [currentAffairsItems, setCurrentAffairsItems] = useState([]);
 
-    const handleSaveNewOption = (index) => {
-        const updatedAffairs = [...affairs];
-        const newClassification = updatedAffairs[index].newOptionValue;
+	const [options, setOptions] = useState([
+		{ value: "world", label: "World" },
+		{ value: "india", label: "India" },
+		{ value: "Environment", label: "Environment" },
+		{ value: "assam", label: "Assam" },
+	]);
 
-        if (newClassification) {
-            const newOptions = [
-                ...options,
-                {
-                    value: newClassification.toLowerCase(),
-                    label: newClassification,
-                },
-            ];
-            setOptions(newOptions);
+	const [affairs, setAffairs] = useState([
+		{
+			date_of_event: null,
+			category: "",
+			title: "",
+			description: "",
+			currentAffImg: [],
+			showInput: false,
+			newOptionValue: "",
+			selectDisabled: false,
+		},
+	]);
 
-            updatedAffairs[index].category = newClassification.toLowerCase();
-            updatedAffairs[index].showInput = false;
-            updatedAffairs[index].selectDisabled = false;
-            updatedAffairs[index].newOptionValue = "";
-            setAffairs(updatedAffairs);
-        }
-    };
 
-    const handleCancel = (index) => {
-        const updatedAffairs = [...affairs];
-        updatedAffairs[index].newOptionValue = "";
-        updatedAffairs[index].showInput = false;
-        updatedAffairs[index].selectDisabled = false;
-        setAffairs(updatedAffairs);
-    };
+	const handleFileChange = (index, { fileList }) => {
+		const updatedAffairs = [...affairs];
+		updatedAffairs[index].currentAffImg = fileList.slice(-1);
+		setAffairs(updatedAffairs);
+	};
 
-    const handleChange = (index, field, value) => {
-        const updatedAffairs = [...affairs];
-        updatedAffairs[index][field] = value;
-        setAffairs(updatedAffairs);
-    };
+	const convertToBase64 = (file) => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = (error) => reject(error);
+		});
+	};
 
-    const handleFileChange = (index, { fileList }) => {
-        const updatedAffairs = [...affairs];
-        updatedAffairs[index].currentAffImg = fileList.slice(-1);
-        setAffairs(updatedAffairs);
-    };
 
-    const convertToBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (error) => reject(error);
-        });
-    };
+	 useEffect(() => {
+		 const fetchCurrentAffairs = async () => {
+			 const accessToken = localStorage.getItem("accessToken");
+			 try {
+				 const response = await fetch(
+					 "https://examappbackend.onrender.com/api/v1/app/admin/current-affairs",
+					 {
+						 method: "POST",
+						 headers: {
+							 "Content-Type": "application/json",
+							 Authorization: `Bearer ${accessToken}`,
+						 },
+						 body: JSON.stringify({
+							 action: "get",
+						 }),
+					 }
+				 );
 
-    const handleSubmitAll = async () => {
-        const affairsToSubmit = [];
+				 if (!response.ok) {
+					 throw new Error(`Error: ${response.statusText}`);
+				 }
 
-        for (const affair of affairs) {
-            const {
-                title,
-                description,
-                date_of_event,
-                category,
-                currentAffImg,
-            } = affair;
+				 const data = await response.json();
+				 console.log(data);
+				 const currentAffairs = data.data.currentAffairs;
 
+				 const items = currentAffairs.map((affair) => ({
+					 label: affair.title,
+					 key: affair._id,
+					 details: affair,
+				 }));
+
+				 setCurrentAffairsItems(items);
+			 } catch (error) {
+				 console.error("Error fetching current affairs:", error);
+			 }
+		 };
+
+		 fetchCurrentAffairs();
+	 }, []);
+
+	
+	const handleAffairSelect = (key) => {
+		const selected = currentAffairsItems.find((item) => item.key === key);
+		if(selected){
+			setTitle(selected.details.title);
+			setCat(selected.details.category);
+			setDate(selected.details.date_of_event);
+			setDes(selected.details.description);
+			setSelectedAffairId(selected.details._id);
+		}
+	};
+
+
+
+	const handleSubmitAll = async () => {
+        try {
+            if (affairs.length === 0) {
+                message.error("No affairs to submit");
+                return;
+            }
+
+            if (!selectedAffairId || !title || !des || !date || !cat) {
+                message.error("Please fill in all required fields");
+                return;
+            }
+
+            const currentAffImg = affairs[0].currentAffImg;
             const imgBase64 =
                 currentAffImg.length > 0
                     ? await convertToBase64(currentAffImg[0].originFileObj)
                     : "";
 
-            affairsToSubmit.push({
-                action: "create",
+            const payload = {
+                action: "update",
+                id: selectedAffairId,
                 title: title,
                 currentAffImg: imgBase64,
-                description: description,
-                date_of_event: date_of_event?.format("YYYY-MM-DD"),
-                category: category,
-            });
-        }
+                description: des,
+                date_of_event: date,
+                category: cat,
+            };
 
-        try {
             const accessToken = localStorage.getItem("accessToken");
 
             const response = await fetch(
@@ -139,42 +163,45 @@ const UploadAffairs = () => {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${accessToken}`,
                     },
-                    body: JSON.stringify(affairsToSubmit[0]),
+                    body: JSON.stringify(payload),
                 }
             );
 
-            if (response.ok) {
-                setAffairs([
-                    {
-                        date_of_event: null,
-                        category: "",
-                        title: "",
-                        description: "",
-                        currentAffImg: [],
-                        showInput: false,
-                        newOptionValue: "",
-                        selectDisabled: false,
-                    },
-                ]);
-                message.success("All affairs submitted successfully");
-            } else {
-                message.error("Failed to submit affairs");
+            if (!response.ok) {
+                throw new Error("Failed to submit affair");
             }
+
+            setAffairs([
+                {
+                    date_of_event: null,
+                    category: "",
+                    title: "",
+                    description: "",
+                    currentAffImg: [],
+                    showInput: false,
+                    newOptionValue: "",
+                    selectDisabled: false,
+                },
+            ]);
+            message.success("Affair submitted successfully");
         } catch (error) {
             console.error("Error submitting affairs:", error);
             message.error("An error occurred while submitting affairs");
         }
     };
 
-    const onMenuClick = ({ key }) => {
-        if (key === "2") navigate("/live-test-questions");
-        else if (key === "3") navigate("/question-papers");
-        else if (key === "4") navigate("/notes");
-        else if (key === "5") navigate("/references");
-        else if (key === "6") navigate("/upload-current-affairs");
-    };
 
-    return (
+
+
+	const onMenuClick = ({ key }) => {
+		if (key === "2") navigate("/live-test-questions");
+		else if (key === "3") navigate("/question-papers");
+		else if (key === "4") navigate("/notes");
+		else if (key === "5") navigate("/references");
+		else if (key === "6") navigate("/upload-current-affairs");
+	};
+
+	return (
         <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
             <Sider
                 width={200}
@@ -211,6 +238,7 @@ const UploadAffairs = () => {
                 >
                     Focus Admin Portal
                 </Header>
+
                 <Layout style={{ padding: "24px 24px 24px" }}>
                     <Content
                         style={{
@@ -224,9 +252,9 @@ const UploadAffairs = () => {
                         <div
                             style={{
                                 display: "flex",
-                                flexDirection: "row",
                                 width: "100%",
                                 justifyContent: "space-between",
+                                alignItems: "center",
                             }}
                         >
                             <div
@@ -238,25 +266,8 @@ const UploadAffairs = () => {
                             >
                                 Current Affairs Section
                             </div>
-
-                            <button
-                                style={{
-                                    margin: "24px",
-                                    padding: "10px 20px",
-                                    backgroundColor: "#007bff",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "5px",
-                                    cursor: "pointer",
-                                }}
-                                onClick={() => {
-                                    window.location.href =
-                                        "/edit-current-affairs";
-                                }}
-                            >
-                                Edit current affairs
-                            </button>
                         </div>
+
                         <hr
                             style={{
                                 margin: "20px 0",
@@ -264,7 +275,43 @@ const UploadAffairs = () => {
                                 borderTop: "1px solid #e0e0e0",
                             }}
                         />
-
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                flexDirection: "row",
+                                marginBottom: "20px",
+                                padding: "20px",
+								minWidth: "16vw"
+                            }}
+                        >
+                            <Dropdown
+                                menu={{
+                                    items: currentAffairsItems.map((item) => ({
+                                        key: item.key,
+                                        label: (
+                                            <a
+                                                onClick={() =>
+                                                    handleAffairSelect(item.key)
+                                                }
+                                            >
+                                                {item.label}
+                                            </a>
+                                        ),
+                                    })),
+                                }}
+                                trigger={["click"]}
+                            >
+                                <a onClick={(e) => e.preventDefault()}>
+                                    <Space>
+                                        <Button>
+                                            {title}
+                                            <DownOutlined />
+                                        </Button>
+                                    </Space>
+                                </a>
+                            </Dropdown>
+                        </div>
                         {affairs.map((affair, index) => (
                             <div
                                 key={index}
@@ -301,14 +348,20 @@ const UploadAffairs = () => {
                                         >
                                             <DatePicker
                                                 style={{ width: "360px" }}
-                                                value={affair.date_of_event}
-                                                onChange={(date_of_event) =>
-                                                    handleChange(
-                                                        index,
-                                                        "date_of_event",
-                                                        date_of_event
-                                                    )
+                                                value={
+                                                    date ? dayjs(date) : null
                                                 }
+                                                onChange={(dateValue) => {
+                                                    setDate(
+                                                        dateValue
+                                                            ? dayjs(
+                                                                  dateValue
+                                                              ).format(
+                                                                  "YYYY-MM-DD"
+                                                              )
+                                                            : null
+                                                    );
+                                                }}
                                             />
                                         </Form.Item>
                                         <Form.Item
@@ -323,12 +376,9 @@ const UploadAffairs = () => {
                                         >
                                             <Select
                                                 style={{ width: "360px" }}
-                                                value={affair.category}
+                                                value={cat}
                                                 onChange={(value) =>
-                                                    handleSelectChange(
-                                                        index,
-                                                        value
-                                                    )
+                                                    setCat(value)
                                                 }
                                             >
                                                 {options.map((option) => (
@@ -343,47 +393,6 @@ const UploadAffairs = () => {
                                                     Add New Option
                                                 </Select.Option>
                                             </Select>
-
-                                            {affair.showInput && (
-                                                <div
-                                                    style={{
-                                                        display: "flex",
-                                                        gap: "10px",
-                                                        marginTop: "10px",
-                                                    }}
-                                                >
-                                                    <Input
-                                                        value={
-                                                            affair.newOptionValue
-                                                        }
-                                                        onChange={(e) => {
-                                                            handleChange(
-                                                                index,
-                                                                "newOptionValue",
-                                                                e.target.value
-                                                            );
-                                                        }}
-                                                        placeholder="New category"
-                                                    />
-                                                    <Button
-                                                        onClick={() =>
-                                                            handleSaveNewOption(
-                                                                index
-                                                            )
-                                                        }
-                                                        type="primary"
-                                                    >
-                                                        Save
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() =>
-                                                            handleCancel(index)
-                                                        }
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                </div>
-                                            )}
                                         </Form.Item>
                                         <Form.Item
                                             label="Title"
@@ -397,17 +406,14 @@ const UploadAffairs = () => {
                                         >
                                             <Input
                                                 style={{ width: "360px" }}
-                                                value={affair.title}
+                                                value={title}
                                                 onChange={(e) =>
-                                                    handleChange(
-                                                        index,
-                                                        "title",
-                                                        e.target.value
-                                                    )
+                                                    setTitle(e.target.value)
                                                 }
                                                 placeholder="Title"
                                             />
                                         </Form.Item>
+
                                         <Form.Item
                                             label="Description"
                                             labelCol={{
@@ -420,13 +426,9 @@ const UploadAffairs = () => {
                                         >
                                             <TextArea
                                                 style={{ width: "360px" }}
-                                                value={affair.description}
+                                                value={des}
                                                 onChange={(e) =>
-                                                    handleChange(
-                                                        index,
-                                                        "description",
-                                                        e.target.value
-                                                    )
+                                                    setDes(e.target.value)
                                                 }
                                                 rows={4}
                                                 placeholder="Description"
@@ -464,6 +466,7 @@ const UploadAffairs = () => {
                                 </Form>
                             </div>
                         ))}
+
                         <div
                             style={{
                                 flex: 1,
@@ -487,4 +490,4 @@ const UploadAffairs = () => {
     );
 };
 
-export default UploadAffairs;
+export default EditAffairs;

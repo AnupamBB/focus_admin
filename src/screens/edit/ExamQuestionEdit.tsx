@@ -322,8 +322,8 @@ const fetchExamNames = async (examCategory) => {
                         options: q.options.map((opt) => opt.value),
                         correct_answer: q.options[q.correctOption]?.value,
                         question_category: "Question Category",
-                        positive_mark: q.positiveMark,
-                        negative_mark: q.negativeMark,
+                        positive_mark: Number(q.positiveMark),
+                        negative_mark: Number(q.negativeMark),
                     })),
                 };
                 console.log("payload", payload);

@@ -1,10 +1,5 @@
-import { useState } from "react";
-import {
-    PlusOutlined,
-    DeleteOutlined,
-    DownOutlined,
-    UserOutlined,
-} from "@ant-design/icons";
+import { useEffect, useState } from "react";
+import { PlusOutlined, DeleteOutlined, DownOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
     Layout,
@@ -16,27 +11,34 @@ import {
     message,
     Dropdown,
     Space,
-    MenuProps,
     Upload,
 } from "antd";
-import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
 
 const { Header, Content, Sider } = Layout;
 
-const ExamQuestionScreen = () => {
+const EditExamQuestion = () => {
     const navigate = useNavigate();
     const [selectedMasterCategory, setSelectedMasterCategory] = useState(
         "Select master category"
     );
+    const [masterCategoryItems, setMasterCategoryItems] = useState([]);
+
     const [examCategories, setExamCategories] = useState([]);
-    const [examName, setExamName] = useState("");
+    const [examNames, setExamNames] = useState([]);
+    const [selectedExamName, setSelectedExamName] =
+        useState("Select exam name");
     const [globalPositiveMark, setGlobalPositiveMark] = useState();
     const [globalNegativeMark, setGlobalNegativeMark] = useState();
     const [image, setImage] = useState(null);
+    const [examId, setExamId] = useState("");
 
     const getBase64 = (file) => {
         return new Promise((resolve, reject) => {
+            if (!(file instanceof Blob)) {
+                reject(new Error("Invalid file type"));
+                return;
+            }
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => resolve(reader.result);
@@ -54,10 +56,198 @@ const ExamQuestionScreen = () => {
         message.success("Marks applied to all questions");
     };
 
+    useEffect(() => {
+        const fetchMasterCategories = async () => {
+            const accessToken = localStorage.getItem("accessToken");
+            try {
+                const response = await fetch(
+                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const categories = data.data.master_categories;
+
+                const items = categories.map((category, index) => ({
+                    label: category.master_category,
+                    key: index.toString(),
+                }));
+
+                setMasterCategoryItems(items);
+            } catch (error) {
+                console.error("Error fetching master categories:", error);
+            }
+        };
+
+        fetchMasterCategories();
+    }, []);
+
+    const fetchExamCategories = async (masterCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({ master_category: masterCategory }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setExamCategories(
+                data.data.examCategories.map((category) => ({
+                    label: category,
+                    key: category,
+                }))
+            );
+        } catch (error) {
+            console.error("Error fetching exam categories:", error);
+        }
+    };
+
+    const fetchExamNames = async (examCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/admin/get-all-exams-under-exam-category",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({ exam_category: examCategory }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setExamNames(
+                data.data.map((exam) => ({
+                    label: exam.exam_name,
+                    key: exam.id,
+                }))
+            );
+        } catch (error) {
+            console.error("Error fetching exam names:", error);
+        }
+    };
+
+    const handleCategorySelect = (key) => {
+        const selectedCategory = masterCategoryItems.find(
+            (item) => item.key === key
+        );
+        const masterCategory = selectedCategory
+            ? selectedCategory.label
+            : "Select master category";
+        setSelectedMasterCategory(masterCategory);
+
+        if (masterCategory !== "Select master category") {
+            fetchExamCategories(masterCategory);
+        }
+    };
+    const handleExamCategorySelect = (key) => {
+        const selectedCategory = examCategories.find(
+            (item) => item.key === key
+        );
+        const examCategory = selectedCategory
+            ? selectedCategory.label
+            : "Select exam category";
+        setSelectedExamCategory(examCategory);
+
+        if (examCategory !== "Select exam category") {
+            fetchExamNames(examCategory);
+        }
+    };
+
+    const handleExamMenuClick = async (examLabel) => {
+        setSelectedExamName(examLabel);
+        const accessToken = localStorage.getItem("accessToken");
+
+        const selectedExam = examNames.find((exam) => exam.label === examLabel);
+
+        if (selectedExam) {
+            try {
+                const response = await fetch(
+                    "https://examappbackend.onrender.com/api/v1/app/admin/get-exam-info",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify({ exam_id: selectedExam.key }),
+                    }
+                );
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const examData = result.data.exam;
+                    setExamId(selectedExam.key);
+
+                    if (examData.questions && examData.questions.length > 0) {
+                        setGlobalPositiveMark(
+                            examData.questions[0].positive_mark || 0
+                        );
+                        setGlobalNegativeMark(
+                            examData.questions[0].negative_mark || 0
+                        );
+                    }
+
+                    if (examData.exam_image) {
+                        const imageData = examData.exam_image;
+                        setImage({
+                            uid: "-1",
+                            name: `${examData.exam_name}.png`,
+                            status: "done",
+                            url: `data:image/png;base64,${imageData}`,
+                        });
+                    }
+
+                    setQuestions(
+                        examData.questions.map((q) => ({
+                            question: q.question_title,
+                            options: q.options.map((option) => ({
+                                value: option,
+                            })),
+                            correctOption: q.options.indexOf(q.correct_answer),
+                            positiveMark: q.positive_mark,
+                            negativeMark: q.negative_mark,
+                        }))
+                    );
+                } else {
+                    console.error("Failed to fetch exam info");
+                }
+            } catch (error) {
+                console.error("Error fetching exam info:", error);
+            }
+        }
+    };
+
     const handleSubmitAll = async () => {
         let isValid = true;
 
-        if (!examName.trim()) {
+        if (!selectedExamName.trim()) {
             message.error("Please provide an exam name.");
             isValid = false;
             return;
@@ -109,12 +299,15 @@ const ExamQuestionScreen = () => {
         if (isValid) {
             try {
                 let base64Image = null;
-                if (image) {
+                if (image && (image instanceof Blob || image instanceof File)) {
                     base64Image = await getBase64(image);
+                } else if (typeof image === "string") {
+                    base64Image = image;
                 }
 
                 const payload = {
-                    exam_name: examName,
+                    exam_id: examId,
+                    exam_name: selectedExamName,
                     exam_image: base64Image,
                     exam_category: selectedExamCategory,
                     master_category: selectedMasterCategory,
@@ -128,12 +321,13 @@ const ExamQuestionScreen = () => {
                         negative_mark: q.negativeMark,
                     })),
                 };
-
+                console.log("payload", payload);
                 const accessToken = localStorage.getItem("accessToken");
+
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/admin/add-exam",
+                    "https://examappbackend.onrender.com/api/v1/app/admin/edit-exam",
                     {
-                        method: "POST",
+                        method: "PUT",
                         headers: {
                             "Content-Type": "application/json",
                             Authorization: `Bearer ${accessToken}`,
@@ -144,18 +338,11 @@ const ExamQuestionScreen = () => {
 
                 if (response.ok) {
                     message.success("All data submitted successfully!");
-                    setExamName("");
-                    setImage(null);
-                    setQuestions([
-                        {
-                            question: "",
-                            description: "",
-                            options: [{ value: "", correct: false }],
-                            correctOption: null,
-                        },
-                    ]);
                 } else {
-                    message.error("Failed to submit exam data.");
+                    const errorData = await response.json();
+                    message.error(
+                        `Failed to submit exam data: ${errorData.message}`
+                    );
                 }
             } catch (error) {
                 console.error("Error submitting exam data:", error);
@@ -163,79 +350,6 @@ const ExamQuestionScreen = () => {
             }
         }
     };
-
-    const examCategoryMap = {
-        Engineering: [
-            { label: "GATE", key: "1" },
-            { label: "IES", key: "2" },
-            { label: "IES 2", key: "3" },
-            { label: "JEE", key: "3" },
-            { label: "BITSAT", key: "3" },
-            { label: "VITEEE", key: "3" },
-        ],
-        Banking: [
-            { label: "IBPS", key: "1" },
-            { label: "SBI", key: "2" },
-        ],
-        Law: [
-            { label: "Corporate", key: "1" },
-            { label: "Criminal", key: "2" },
-        ],
-        Management: [
-            { label: "HR", key: "1" },
-            { label: "Finance", key: "2" },
-        ],
-        Medical: [
-            { label: "MBBS", key: "1" },
-            { label: "BDS", key: "2" },
-        ],
-    };
-    const handleMenuClick: MenuProps["onClick"] = (e) => {
-        const selectedMaster = e.domEvent.currentTarget.innerText;
-        setSelectedMasterCategory(selectedMaster);
-        setExamCategories(examCategoryMap[selectedMaster]);
-        setSelectedExamCategory("Select exam category");
-        message.info(`Selected ${selectedMaster}`);
-    };
-
-    const handleExamMenuClick: MenuProps["onClick"] = (e) => {
-        const selectedExam = e.domEvent.currentTarget.innerText;
-        setSelectedExamCategory(selectedExam);
-        message.info(`Selected ${selectedExam}`);
-    };
-
-    const masterCategoryItems: MenuProps["items"] = [
-        {
-            label: "Engineering",
-            key: "1",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-        {
-            label: "Banking",
-            key: "2",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-        {
-            label: "Law",
-            key: "3",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-        {
-            label: "Management",
-            key: "4",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-        {
-            label: "Medical",
-            key: "5",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-    ];
 
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
@@ -248,41 +362,31 @@ const ExamQuestionScreen = () => {
             correctOption: null,
         },
     ]);
-    const [jsonInput, setJsonInput] = useState("");
-    const handleJsonSubmit = () => {
-        try {
-            const parsedQuestions = JSON.parse(jsonInput);
 
-            const formattedQuestions = parsedQuestions.map((q) => ({
-                question: q.question,
-                description: q.description || "",
-                options: q.options.map((option) => ({
-                    value: option,
-                    correct: false,
-                })),
-                correctOption: null,
-            }));
-
-            setQuestions(formattedQuestions);
-            message.success("Questions populated successfully");
-        } catch (error) {
-            message.error("Invalid JSON format");
-        }
-    };
-
-    const handleQuestionChange = (index, field, value) => {
+    const handleQuestionChange = (
+        index: number,
+        field: string,
+        value: string | boolean | number
+    ) => {
         const updatedQuestions = [...questions];
         updatedQuestions[index][field] = value;
         setQuestions(updatedQuestions);
     };
 
-    const handleOptionChange = (questionIndex, optionIndex, value) => {
+    const handleOptionChange = (
+        questionIndex: number,
+        optionIndex: number,
+        value: string
+    ) => {
         const updatedQuestions = [...questions];
         updatedQuestions[questionIndex].options[optionIndex].value = value;
         setQuestions(updatedQuestions);
     };
 
-    const handleCorrectOptionChange = (questionIndex, optionIndex) => {
+    const handleCorrectOptionChange = (
+        questionIndex: number,
+        optionIndex: number
+    ) => {
         const updatedQuestions = [...questions];
         updatedQuestions[questionIndex].correctOption = optionIndex;
         updatedQuestions[questionIndex].options.forEach((option, index) => {
@@ -290,7 +394,7 @@ const ExamQuestionScreen = () => {
         });
         setQuestions(updatedQuestions);
     };
-    const handleAddOption = (questionIndex) => {
+    const handleAddOption = (questionIndex: number) => {
         const updatedQuestions = [...questions];
         updatedQuestions[questionIndex].options.push({
             value: "",
@@ -313,7 +417,7 @@ const ExamQuestionScreen = () => {
         ]);
     };
 
-    const handleDeleteQuestion = (questionIndex) => {
+    const handleDeleteQuestion = (questionIndex: number) => {
         if (questions.length > 1) {
             const updatedQuestions = questions.filter(
                 (_, index) => index !== questionIndex
@@ -324,7 +428,7 @@ const ExamQuestionScreen = () => {
         }
     };
 
-    const handleDeleteOption = (questionIndex, optionIndex) => {
+    const handleDeleteOption = (questionIndex: number, optionIndex: number) => {
         const updatedQuestions = [...questions];
         if (updatedQuestions[questionIndex].options.length > 1) {
             updatedQuestions[questionIndex].options = updatedQuestions[
@@ -408,39 +512,12 @@ const ExamQuestionScreen = () => {
                     >
                         <div
                             style={{
-                                display: "flex",
-                                flexDirection: 'row',
-                                width: "100%",
-                                justifyContent: "space-between"
+                                color: "black",
+                                fontSize: 24,
+                                padding: "24px 24px 0",
                             }}
                         >
-                            <div
-                                style={{
-                                    color: "black",
-                                    fontSize: 24,
-                                    padding: "24px 24px 0",
-                                }}
-                            >
-                                Live Test Section
-                            </div>
-
-                            <button
-                                style={{
-                                    margin: "24px",
-                                    padding: "10px 20px",
-                                    backgroundColor: "#007bff",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "5px",
-                                    cursor: "pointer",
-                                }}
-                                onClick={() => {
-                                    window.location.href =
-                                        "/edit-test-questions";
-                                }}
-                            >
-                                Edit Test Questions
-                            </button>
+                            Live Test Section
                         </div>
                         <hr
                             style={{
@@ -449,59 +526,6 @@ const ExamQuestionScreen = () => {
                                 borderTop: "1px solid #e0e0e0",
                             }}
                         />
-
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "center",
-                                flexDirection: "row",
-                                marginTop: "24px",
-                            }}
-                        >
-                            <iframe
-                                src="https://focus-mcq-extract.streamlit.app/?embedded=true"
-                                width="80%"
-                                height="500px"
-                            ></iframe>
-                        </div>
-
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                            }}
-                        >
-                            <Form.Item
-                                label="Paste JSON of Questions"
-                                labelCol={{
-                                    style: {
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        justifyContent: "start",
-                                        width: "100%",
-                                        marginBottom: "8px",
-                                    },
-                                }}
-                                style={{ paddingTop: "24px", minWidth: "40vw" }}
-                            >
-                                <TextArea
-                                    rows={6}
-                                    value={jsonInput}
-                                    onChange={(e) =>
-                                        setJsonInput(e.target.value)
-                                    }
-                                    placeholder='[{"question": "Question 1", "options": ["Option 1", "Option 2"]}, {"question": "Question 2", "options": ["Option A", "Option B"]}]'
-                                />
-                                <Button
-                                    style={{ marginTop: "24px" }}
-                                    type="primary"
-                                    onClick={handleJsonSubmit}
-                                >
-                                    Populate Questions
-                                </Button>
-                            </Form.Item>
-                        </div>
 
                         <div
                             style={{
@@ -542,7 +566,22 @@ const ExamQuestionScreen = () => {
                                         >
                                             <Dropdown
                                                 menu={{
-                                                    items: masterCategoryItems,
+                                                    items: masterCategoryItems.map(
+                                                        (item) => ({
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleCategorySelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
+                                                        })
+                                                    ),
                                                 }}
                                                 trigger={["click"]}
                                             >
@@ -565,9 +604,18 @@ const ExamQuestionScreen = () => {
                                                 menu={{
                                                     items: examCategories.map(
                                                         (item) => ({
-                                                            ...item,
-                                                            onClick:
-                                                                handleExamMenuClick,
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleExamCategorySelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
                                                         })
                                                     ),
                                                 }}
@@ -597,14 +645,44 @@ const ExamQuestionScreen = () => {
                                                     </Space>
                                                 </a>
                                             </Dropdown>
-                                            <Input
-                                                placeholder="Exam name"
-                                                value={examName}
-                                                onChange={(e) =>
-                                                    setExamName(e.target.value)
+
+                                            <Dropdown
+                                                menu={{
+                                                    items: examNames.map(
+                                                        (item) => ({
+                                                            label: item.label,
+                                                            key: item.key,
+                                                            onClick: () =>
+                                                                handleExamMenuClick(
+                                                                    item.label
+                                                                ),
+                                                        })
+                                                    ),
+                                                }}
+                                                trigger={["click"]}
+                                                disabled={
+                                                    selectedExamCategory ===
+                                                    "Select exam category"
                                                 }
-                                                style={{ width: "300px" }}
-                                            />
+                                            >
+                                                <a
+                                                    onClick={(e) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    <Space>
+                                                        <Button
+                                                            disabled={
+                                                                selectedExamCategory ===
+                                                                "Select exam category"
+                                                            }
+                                                        >
+                                                            {selectedExamName}{" "}
+                                                            <DownOutlined />
+                                                        </Button>
+                                                    </Space>
+                                                </a>
+                                            </Dropdown>
                                         </div>
                                         <div
                                             style={{
@@ -929,4 +1007,4 @@ const ExamQuestionScreen = () => {
     );
 };
 
-export default ExamQuestionScreen;
+export default EditExamQuestion;
