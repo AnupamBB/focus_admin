@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     PlusOutlined,
     DeleteOutlined,
     DownOutlined,
-    UserOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
@@ -26,6 +25,7 @@ const { Header, Content, Sider } = Layout;
 
 const ExamQuestionScreen = () => {
     const navigate = useNavigate();
+    const [masterCategoryItems, setMasterCategoryItems] = useState([]);
     const [selectedMasterCategory, setSelectedMasterCategory] = useState(
         "Select master category"
     );
@@ -52,6 +52,73 @@ const ExamQuestionScreen = () => {
         }));
         setQuestions(updatedQuestions);
         message.success("Marks applied to all questions");
+    };
+    useEffect(() => {
+        const fetchMasterCategories = async () => {
+            const accessToken = localStorage.getItem("accessToken");
+            try {
+                const response = await fetch(
+                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const categories = data.data.master_categories;
+
+                const items = categories.map((category, index) => ({
+                    label: category.master_category,
+                    key: index.toString(),
+                }));
+
+                setMasterCategoryItems(items);
+            } catch (error) {
+                console.error("Error fetching master categories:", error);
+            }
+        };
+
+        fetchMasterCategories();
+    }, []);
+
+    const fetchExamCategories = async (masterCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({
+                        master_category: masterCategory,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setExamCategories(
+                data.data.examCategories.map((category) => ({
+                    label: category,
+                    key: category,
+                }))
+            );
+        } catch (error) {
+            console.error("Error fetching exam categories:", error);
+        }
     };
 
     const handleSubmitAll = async () => {
@@ -164,79 +231,6 @@ const ExamQuestionScreen = () => {
         }
     };
 
-    const examCategoryMap = {
-        Engineering: [
-            { label: "GATE", key: "1" },
-            { label: "IES", key: "2" },
-            { label: "IES 2", key: "3" },
-            { label: "JEE", key: "3" },
-            { label: "BITSAT", key: "3" },
-            { label: "VITEEE", key: "3" },
-        ],
-        Banking: [
-            { label: "IBPS", key: "1" },
-            { label: "SBI", key: "2" },
-        ],
-        Law: [
-            { label: "Corporate", key: "1" },
-            { label: "Criminal", key: "2" },
-        ],
-        Management: [
-            { label: "HR", key: "1" },
-            { label: "Finance", key: "2" },
-        ],
-        Medical: [
-            { label: "MBBS", key: "1" },
-            { label: "BDS", key: "2" },
-        ],
-    };
-    const handleMenuClick: MenuProps["onClick"] = (e) => {
-        const selectedMaster = e.domEvent.currentTarget.innerText;
-        setSelectedMasterCategory(selectedMaster);
-        setExamCategories(examCategoryMap[selectedMaster]);
-        setSelectedExamCategory("Select exam category");
-        message.info(`Selected ${selectedMaster}`);
-    };
-
-    const handleExamMenuClick: MenuProps["onClick"] = (e) => {
-        const selectedExam = e.domEvent.currentTarget.innerText;
-        setSelectedExamCategory(selectedExam);
-        message.info(`Selected ${selectedExam}`);
-    };
-
-    const masterCategoryItems: MenuProps["items"] = [
-        {
-            label: "Engineering",
-            key: "1",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-        {
-            label: "Banking",
-            key: "2",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-        {
-            label: "Law",
-            key: "3",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-        {
-            label: "Management",
-            key: "4",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-        {
-            label: "Medical",
-            key: "5",
-            icon: <UserOutlined />,
-            onClick: handleMenuClick,
-        },
-    ];
-
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
     );
@@ -345,6 +339,32 @@ const ExamQuestionScreen = () => {
         setImage(null);
     };
 
+        const handleCategorySelect = (key) => {
+            const selectedCategory = masterCategoryItems.find(
+                (item) => item.key === key
+            );
+            const masterCategory = selectedCategory
+                ? selectedCategory.label
+                : "Select master category";
+            setSelectedMasterCategory(masterCategory);
+
+            if (masterCategory !== "Select master category") {
+                fetchExamCategories(masterCategory);
+            }
+        };
+        const handleExamCategorySelect = (key) => {
+            const selectedCategory = examCategories.find(
+                (item) => item.key === key
+            );
+            const examCategory = selectedCategory
+                ? selectedCategory.label
+                : "Select exam category";
+            setSelectedExamCategory(examCategory);
+
+            if (examCategory !== "Select exam category") {
+                fetchExamNames(examCategory);
+            }
+        };
     const onMenuClick = ({ key }) => {
         if (key === "2") {
             navigate("/live-test-questions");
@@ -409,9 +429,9 @@ const ExamQuestionScreen = () => {
                         <div
                             style={{
                                 display: "flex",
-                                flexDirection: 'row',
+                                flexDirection: "row",
                                 width: "100%",
-                                justifyContent: "space-between"
+                                justifyContent: "space-between",
                             }}
                         >
                             <div
@@ -542,7 +562,22 @@ const ExamQuestionScreen = () => {
                                         >
                                             <Dropdown
                                                 menu={{
-                                                    items: masterCategoryItems,
+                                                    items: masterCategoryItems.map(
+                                                        (item) => ({
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleCategorySelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
+                                                        })
+                                                    ),
                                                 }}
                                                 trigger={["click"]}
                                             >
@@ -565,9 +600,18 @@ const ExamQuestionScreen = () => {
                                                 menu={{
                                                     items: examCategories.map(
                                                         (item) => ({
-                                                            ...item,
-                                                            onClick:
-                                                                handleExamMenuClick,
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleExamCategorySelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
                                                         })
                                                     ),
                                                 }}

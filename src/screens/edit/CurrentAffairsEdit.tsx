@@ -69,7 +69,6 @@ const EditAffairs = () => {
 		});
 	};
 
-
 	 useEffect(() => {
 		 const fetchCurrentAffairs = async () => {
 			 const accessToken = localStorage.getItem("accessToken");
@@ -264,7 +263,7 @@ const EditAffairs = () => {
                                     padding: "24px 24px 0",
                                 }}
                             >
-                                Current Affairs Section
+                                Edit Current Affairs Section
                             </div>
                         </div>
 

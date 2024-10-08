@@ -182,7 +182,6 @@ const fetchExamNames = async (examCategory) => {
     };
 
 
-
     const handleExamMenuClick = async (examLabel) => {
         setSelectedExamName(examLabel);
         const accessToken = localStorage.getItem("accessToken");
@@ -523,7 +522,7 @@ const fetchExamNames = async (examCategory) => {
                                 padding: "24px 24px 0",
                             }}
                         >
-                            Live Test Section
+                            Edit Live Test Section
                         </div>
                         <hr
                             style={{

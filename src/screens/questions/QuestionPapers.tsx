@@ -1,44 +1,191 @@
-import { useState } from "react";
-import { InboxOutlined } from "@ant-design/icons";
+import { useEffect, useState } from "react";
+import { InboxOutlined, DownOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
     Layout,
     Menu,
-    theme,
     Button,
-    Upload,
-    message,
     Form,
     Input,
+    message,
+    Dropdown,
+    Space,
+    Upload,
 } from "antd";
 import "../styles.css";
-
-const { Header, Content, Sider } = Layout;
 const { Dragger } = Upload;
+const { Header, Content, Sider } = Layout;
 
 const QuestionPapers = () => {
-    const [notes, setNotes] = useState([{ title: "", pdfFile: [] }]);
+    const [fileBase64, setFileBase64] = useState("");
     const navigate = useNavigate();
-    const {
-        token: { colorBgContainer, borderRadiusLG },
-    } = theme.useToken();
+    const [selectedMasterCategory, setSelectedMasterCategory] = useState(
+        "Select master category"
+    );
+    const [masterCategoryItems, setMasterCategoryItems] = useState([]);
+    const [examCategories, setExamCategories] = useState([]);
+    const [materialTitle, setMaterialTitle] = useState("");
+    const [selectedExamCategory, setSelectedExamCategory] = useState(
+        "Select exam category"
+    );
 
-    const handleChange = (index, field, value) => {
-        const updatedNotes = [...notes];
-        updatedNotes[index][field] = value;
-        setNotes(updatedNotes);
+    const handleFileChange = (info) => {
+        const file = info.file;
+        if (!file || !(file instanceof Blob)) {
+            message.error(
+                "Failed to read the file. Please make sure to upload a valid file."
+            );
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const base64 = reader.result.split(",")[1];
+            setFileBase64(base64);
+            console.log("Base64:", base64);
+        };
+        reader.readAsDataURL(file);
     };
 
-    const handleFileChange = (index, { fileList }) => {
-        const updatedNotes = [...notes];
-        updatedNotes[index].pdfFile = fileList.slice(-1);
-        setNotes(updatedNotes);
+    useEffect(() => {
+        const fetchMasterCategories = async () => {
+            const accessToken = localStorage.getItem("accessToken");
+            try {
+                const response = await fetch(
+                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const categories = data.data.master_categories;
+
+                const items = categories.map((category, index) => ({
+                    label: category.master_category,
+                    key: index.toString(),
+                }));
+
+                setMasterCategoryItems(items);
+            } catch (error) {
+                console.error("Error fetching master categories:", error);
+            }
+        };
+
+        fetchMasterCategories();
+    }, []);
+
+    const fetchExamCategories = async (masterCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({ master_category: masterCategory }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setExamCategories(
+                data.data.examCategories.map((category) => ({
+                    label: category,
+                    key: category,
+                }))
+            );
+        } catch (error) {
+            console.error("Error fetching exam categories:", error);
+        }
     };
 
-    const handleSubmitAll = () => {
-        console.log("All notes submitted:", notes);
-        setNotes([{ title: "", pdfFile: [] }]);
-        message.success("All notes submitted successfully");
+    const handleCategorySelect = (key) => {
+        const selectedCategory = masterCategoryItems.find(
+            (item) => item.key === key
+        );
+        const masterCategory = selectedCategory
+            ? selectedCategory.label
+            : "Select master category";
+        setSelectedMasterCategory(masterCategory);
+
+        if (masterCategory !== "Select master category") {
+            fetchExamCategories(masterCategory);
+        }
+    };
+
+    const handleExamCategorySelect = (key) => {
+        const selectedCategory = examCategories.find(
+            (item) => item.key === key
+        );
+        const examCategory = selectedCategory
+            ? selectedCategory.label
+            : "Select exam category";
+        setSelectedExamCategory(examCategory);
+
+        if (examCategory !== "Select exam category") {
+            fetchStudyMaterials(examCategory);
+        }
+    };
+
+    const handleSubmitAll = async () => {
+        console.log("materialTitle     ", materialTitle);
+        console.log("base     ", fileBase64);
+        if (!materialTitle || !fileBase64) {
+            message.error("Please fill in all the fields before submitting.");
+            return;
+        }
+
+        const accessToken = localStorage.getItem("accessToken");
+        const payload = {
+            action: "create",
+            exam_category: selectedExamCategory,
+            material_type: "pyqs",
+            material_data: [
+                {
+                    title: materialTitle,
+                    content: fileBase64,
+                },
+            ],
+        };
+        console.log("payload", payload);
+
+        try {
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (response.ok) {
+                message.success("File uploaded successfully!");
+            } else {
+                const errorData = await response.json();
+                message.error(`Upload failed: ${errorData.message}`);
+            }
+        } catch (error) {
+            message.error("An error occurred while uploading the file.");
+            console.error("Upload error:", error);
+        }
     };
 
     const onMenuClick = ({ key }) => {
@@ -53,28 +200,6 @@ const QuestionPapers = () => {
         } else if (key === "6") {
             navigate("/upload-current-affairs");
         }
-    };
-
-    const uploadProps = {
-        name: "file",
-        multiple: true,
-        action: "https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload",
-        onChange(info) {
-            const { status } = info.file;
-            if (status !== "uploading") {
-                console.log(info.file, info.fileList);
-            }
-            if (status === "done") {
-                message.success(
-                    `${info.file.name} file uploaded successfully.`
-                );
-            } else if (status === "error") {
-                message.error(`${info.file.name} file upload failed.`);
-            }
-        },
-        onDrop(e) {
-            console.log("Dropped files", e.dataTransfer.files);
-        },
     };
 
     return (
@@ -103,42 +228,62 @@ const QuestionPapers = () => {
                 </Menu>
             </Sider>
             <Layout>
-                <Header style={{ background: colorBgContainer }}>
-                    <div
-                        style={{
-                            textAlign: "center",
-                            color: "black",
-                            fontSize: 32,
-                            fontWeight: "bold",
-                        }}
-                    >
-                        Focus Admin Portal
-                    </div>
-                </Header>
-                <Layout
+                <Header
                     style={{
-                        padding: "24px 24px 24px",
-                        flexDirection: "row",
-                        gap: 24,
+                        background: "#f4f4f4",
+                        textAlign: "center",
+                        color: "black",
+                        fontSize: 32,
+                        fontWeight: "bold",
                     }}
                 >
+                    Focus Admin Portal
+                </Header>
+                <Layout style={{ padding: "24px 24px 24px" }}>
                     <Content
                         style={{
                             padding: 0,
                             margin: 0,
                             minHeight: 280,
-                            background: colorBgContainer,
-                            borderRadius: borderRadiusLG,
+                            background: "#fff",
+                            borderRadius: "8px",
                         }}
                     >
                         <div
                             style={{
-                                color: "black",
-                                fontSize: 24,
-                                padding: "24px 24px 0",
+                                display: "flex",
+                                flexDirection: "row",
+                                width: "100%",
+                                justifyContent: "space-between",
                             }}
                         >
-                            Question Papers Section
+                            <div
+                                style={{
+                                    color: "black",
+                                    fontSize: 24,
+                                    padding: "24px 24px 0",
+                                }}
+                            >
+                                Question Paper Section
+                            </div>
+
+                            <button
+                                style={{
+                                    margin: "24px",
+                                    padding: "10px 20px",
+                                    backgroundColor: "#007bff",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "5px",
+                                    cursor: "pointer",
+                                }}
+                                onClick={() => {
+                                    window.location.href =
+                                        "/edit-question-paper";
+                                }}
+                            >
+                                Edit Question Paper
+                            </button>
                         </div>
                         <hr
                             style={{
@@ -148,83 +293,163 @@ const QuestionPapers = () => {
                             }}
                         />
 
-                        {notes.map((note, index) => (
-                            <div
-                                key={index}
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                flexDirection: "row",
+                                marginBottom: "20px",
+                                padding: "20px",
+                            }}
+                        >
+                            <Form
                                 style={{
+                                    minWidth: "40vw",
                                     display: "flex",
-                                    justifyContent: "center",
-                                    marginBottom: "20px",
+                                    flexDirection: "row",
+                                    gap: "20px",
+                                    alignItems: "center",
+                                    border: "1px solid #e0e0e0",
+                                    padding: 20,
+                                    borderRadius: "8px",
                                 }}
                             >
-                                <Form
-                                    style={{
-                                        width: "50%",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: "20px",
-                                        borderWidth: 1,
-                                        padding: 20,
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            flex: 2,
-                                            display: "flex",
-                                            flexDirection: "column",
+                                <div style={{ flex: 2 }}>
+                                    <Form.Item
+                                        labelCol={{
+                                            style: {
+                                                display: "flex",
+                                                width: "140px",
+                                            },
                                         }}
                                     >
-                                        <Form.Item
-                                            label={`Enter Title`}
-                                            labelCol={{ span: 24 }}
-                                            wrapperCol={{ span: 24 }}
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                width: "100%",
+                                            }}
                                         >
-                                            <Input
-                                                placeholder="Enter Title"
-                                                value={note.title}
-                                                onChange={(e) =>
-                                                    handleChange(
-                                                        index,
-                                                        "title",
-                                                        e.target.value
-                                                    )
-                                                }
-                                                style={{ width: "100%" }}
-                                            />
-                                        </Form.Item>
-                                    </div>
-
-                                    <div>
-                                        <Form.Item>
-                                            <Dragger
-                                                {...uploadProps}
-                                                fileList={note.pdfFile}
-                                                beforeUpload={() => false}
-                                                onChange={(file) =>
-                                                    handleFileChange(
-                                                        index,
-                                                        file
-                                                    )
-                                                }
-                                                maxCount={1}
+                                            <Dropdown
+                                                menu={{
+                                                    items: masterCategoryItems.map(
+                                                        (item) => ({
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleCategorySelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
+                                                        })
+                                                    ),
+                                                }}
+                                                trigger={["click"]}
                                             >
-                                                <p className="ant-upload-drag-icon">
-                                                    <InboxOutlined />
-                                                </p>
-                                                <p className="ant-upload-text">
-                                                    Click or drag file to this
-                                                    area to upload
-                                                </p>
-                                                <p className="ant-upload-hint">
-                                                    Support for a single upload
-                                                </p>
-                                            </Dragger>
-                                        </Form.Item>
-                                    </div>
-                                </Form>
-                            </div>
-                        ))}
+                                                <a
+                                                    onClick={(e) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    <Space>
+                                                        <Button>
+                                                            {
+                                                                selectedMasterCategory
+                                                            }
+                                                            <DownOutlined />
+                                                        </Button>
+                                                    </Space>
+                                                </a>
+                                            </Dropdown>
+                                            <Dropdown
+                                                menu={{
+                                                    items: examCategories.map(
+                                                        (item) => ({
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleExamCategorySelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
+                                                        })
+                                                    ),
+                                                }}
+                                                trigger={["click"]}
+                                                disabled={
+                                                    selectedMasterCategory ===
+                                                    "Select master category"
+                                                }
+                                            >
+                                                <a
+                                                    onClick={(e) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    <Space>
+                                                        <Button
+                                                            disabled={
+                                                                selectedMasterCategory ===
+                                                                "Select master category"
+                                                            }
+                                                        >
+                                                            {
+                                                                selectedExamCategory
+                                                            }
+                                                            <DownOutlined />
+                                                        </Button>
+                                                    </Space>
+                                                </a>
+                                            </Dropdown>
+                                        </div>
+                                    </Form.Item>
+                                    <Form.Item
+                                        label={`Enter Title`}
+                                        labelCol={{ span: 24 }}
+                                        wrapperCol={{ span: 24 }}
+                                    >
+                                        <Input
+                                            placeholder="Enter Title"
+                                            value={materialTitle}
+                                            onChange={(e) =>
+                                                setMaterialTitle(e.target.value)
+                                            }
+                                            style={{ width: "100%" }}
+                                        />
+                                    </Form.Item>
+
+                                    <Form.Item>
+                                        <Dragger
+                                            beforeUpload={() => false}
+                                            maxCount={1}
+                                            onChange={handleFileChange}
+                                        >
+                                            <p className="ant-upload-drag-icon">
+                                                <InboxOutlined />
+                                            </p>
+                                            <p className="ant-upload-text">
+                                                Click or drag file to this area
+                                                to upload Question Paper
+                                            </p>
+                                            <p className="ant-upload-hint">
+                                                Support for a single file at a
+                                                time
+                                            </p>
+                                        </Dragger>
+                                    </Form.Item>
+                                </div>
+                            </Form>
+                        </div>
                         <Form.Item
                             style={{
                                 display: "flex",
@@ -234,9 +459,9 @@ const QuestionPapers = () => {
                             <Button
                                 type="primary"
                                 onClick={handleSubmitAll}
-                                style={{ width: "100%" }}
+                                style={{ background: "#4CAF50" }}
                             >
-                                Submit Paper
+                                Submit
                             </Button>
                         </Form.Item>
                     </Content>

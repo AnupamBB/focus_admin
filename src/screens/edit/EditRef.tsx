@@ -10,14 +10,11 @@ import {
     message,
     Dropdown,
     Space,
-    Upload,
 } from "antd";
 import "../styles.css";
-const { Dragger } = Upload;
 const { Header, Content, Sider } = Layout;
 
-const EditNotes = () => {
-      const [fileBase64, setFileBase64] = useState("");
+const EditReference = () => {
     const navigate = useNavigate();
     const [selectedMasterCategory, setSelectedMasterCategory] = useState(
         "Select master category"
@@ -26,20 +23,21 @@ const EditNotes = () => {
     const [examCategories, setExamCategories] = useState([]);
     const [examNames, setExamNames] = useState([]);
     const [materialTitle, setMaterialTitle] = useState("");
+    const [materialLink, setMaterialLink] = useState("");
     const [id, setId] = useState("");
     const [selectedExamName, setSelectedExamName] = useState("Select material");
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
     );
 
-
-    const handleExamMenuClick = (label, key) => {
+    const handleExamMenuClick = (label) => {
         const selectedNote = examNames.find((item) => item.label === label);
-        
+
         console.log(examNames);
         if (selectedNote) {
             setMaterialTitle(selectedNote.label);
             setId(selectedNote.key);
+            setMaterialLink(selectedNote.content);
             const byteCharacters = atob(selectedNote.content.split(",")[1]);
             const byteNumbers = new Uint8Array(byteCharacters.length);
             for (let i = 0; i < byteCharacters.length; i++) {
@@ -52,24 +50,6 @@ const EditNotes = () => {
             setSelectedExamName(selectedNote.label);
         }
     };
-    const handleFileChange = (info) => {
-        const file = info.file;
-        if (!file || !(file instanceof Blob)) {
-            message.error(
-                "Failed to read the file. Please make sure to upload a valid file."
-            );
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const base64 = reader.result.split(",")[1];
-            setFileBase64(base64);
-            console.log("Base64:", base64);
-        };
-        reader.readAsDataURL(file);
-    };
-
 
 
     useEffect(() => {
@@ -138,7 +118,7 @@ const EditNotes = () => {
         }
     };
 
-    const fetchStudyMaterials = async (examCategory) => {
+    const fetchQuestionPaper = async (examCategory) => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
@@ -152,7 +132,7 @@ const EditNotes = () => {
                     body: JSON.stringify({
                         exam_category: examCategory,
                         action: "read",
-                        material_type: "study_materials",
+                        material_type: "ref_books",
                     }),
                 }
             );
@@ -163,8 +143,9 @@ const EditNotes = () => {
 
             const data = await response.json();
             setExamNames(
-                data.data.material.study_materials.map((material) => ({
+                data.data.material.ref_books.map((material) => ({
                     label: material.title,
+                    content: material.content,
                     key: material._id,
                 }))
             );
@@ -197,14 +178,12 @@ const EditNotes = () => {
         setSelectedExamCategory(examCategory);
 
         if (examCategory !== "Select exam category") {
-            fetchStudyMaterials(examCategory);
+            fetchQuestionPaper(examCategory);
         }
     };
 
-        const handleSubmitAll = async () => {
-            console.log("materialTitle     ", materialTitle);
-            console.log("base     ", fileBase64);
-        if (!materialTitle || !fileBase64 ) {
+    const handleSubmitAll = async () => {
+        if (!materialTitle || !materialLink) {
             message.error("Please fill in all the fields before submitting.");
             return;
         }
@@ -213,24 +192,27 @@ const EditNotes = () => {
         const payload = {
             action: "update",
             exam_category: selectedExamCategory,
-            material_type: "study_materials",
+            material_type: "ref_books",
             material_object_id: id,
             updateField: {
                 title: materialTitle,
-                content: fileBase64,
+                content: materialLink,
             },
         };
         console.log("payload", payload);
 
         try {
-            const response = await fetch("https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify(payload),
-            });
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
 
             if (response.ok) {
                 message.success("File uploaded successfully!");
@@ -257,7 +239,6 @@ const EditNotes = () => {
             navigate("/upload-current-affairs");
         }
     };
-
 
     return (
         <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
@@ -313,7 +294,7 @@ const EditNotes = () => {
                                 padding: "24px 24px 0",
                             }}
                         >
-                            Edit Notes Section
+                            Live Test Section
                         </div>
                         <hr
                             style={{
@@ -496,24 +477,19 @@ const EditNotes = () => {
                                         />
                                     </Form.Item>
 
-                                    <Form.Item>
-                                        <Dragger
-                                            beforeUpload={() => false}
-                                            maxCount={1}
-                                            onChange={handleFileChange}
-                                        >
-                                            <p className="ant-upload-drag-icon">
-                                                <InboxOutlined />
-                                            </p>
-                                            <p className="ant-upload-text">
-                                                Click or drag file to this area
-                                                to upload Notes
-                                            </p>
-                                            <p className="ant-upload-hint">
-                                                Support for a single file at a
-                                                time
-                                            </p>
-                                        </Dragger>
+                                    <Form.Item
+                                        label={`Enter Link`}
+                                        labelCol={{ span: 24 }}
+                                        wrapperCol={{ span: 24 }}
+                                    >
+                                        <Input
+                                            placeholder="Enter Title"
+                                            value={materialLink}
+                                            onChange={(e) =>
+                                                setMaterialLink(e.target.value)
+                                            }
+                                            style={{ width: "100%" }}
+                                        />
                                     </Form.Item>
                                 </div>
                             </Form>
@@ -539,4 +515,4 @@ const EditNotes = () => {
     );
 };
 
-export default EditNotes;
+export default EditReference;

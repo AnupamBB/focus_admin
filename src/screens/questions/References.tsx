@@ -1,52 +1,171 @@
-import React, { useState } from "react";
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useEffect, useState } from "react";
+import { InboxOutlined, DownOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
     Layout,
     Menu,
-    theme,
     Button,
-    Upload,
-    Input,
     Form,
+    Input,
     message,
+    Dropdown,
+    Space,
+    Upload,
 } from "antd";
 import "../styles.css";
-
 const { Header, Content, Sider } = Layout;
 
 const References = () => {
-    const [references, setReferences] = useState([
-        { title: "", link: "", image: [] },
-    ]); // Array to store references
     const navigate = useNavigate();
-    const {
-        token: { colorBgContainer, borderRadiusLG },
-    } = theme.useToken();
+    const [selectedMasterCategory, setSelectedMasterCategory] = useState(
+        "Select master category"
+    );
+    const [masterCategoryItems, setMasterCategoryItems] = useState([]);
+    const [examCategories, setExamCategories] = useState([]);
+    const [examNames, setExamNames] = useState([]);
+    const [materialTitle, setMaterialTitle] = useState("");
+    const [materialLink, setMaterialLink] = useState("");
+    const [selectedExamCategory, setSelectedExamCategory] = useState(
+        "Select exam category"
+    );
 
-    const normFile = (e: any) => {
-        if (Array.isArray(e)) {
-            return e;
+
+    useEffect(() => {
+        const fetchMasterCategories = async () => {
+            const accessToken = localStorage.getItem("accessToken");
+            try {
+                const response = await fetch(
+                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const categories = data.data.master_categories;
+
+                const items = categories.map((category, index) => ({
+                    label: category.master_category,
+                    key: index.toString(),
+                }));
+
+                setMasterCategoryItems(items);
+            } catch (error) {
+                console.error("Error fetching master categories:", error);
+            }
+        };
+
+        fetchMasterCategories();
+    }, []);
+
+    const fetchExamCategories = async (masterCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({ master_category: masterCategory }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setExamCategories(
+                data.data.examCategories.map((category) => ({
+                    label: category,
+                    key: category,
+                }))
+            );
+        } catch (error) {
+            console.error("Error fetching exam categories:", error);
         }
-        return e?.fileList;
     };
 
-    const handleChange = (index, field, value) => {
-        const updatedReferences = [...references];
-        updatedReferences[index][field] = value;
-        setReferences(updatedReferences);
+
+    const handleCategorySelect = (key) => {
+        const selectedCategory = masterCategoryItems.find(
+            (item) => item.key === key
+        );
+        const masterCategory = selectedCategory
+            ? selectedCategory.label
+            : "Select master category";
+        setSelectedMasterCategory(masterCategory);
+
+        if (masterCategory !== "Select master category") {
+            fetchExamCategories(masterCategory);
+        }
     };
 
-    const handleFileChange = (index, { fileList }) => {
-        const updatedReferences = [...references];
-        updatedReferences[index].image = fileList.slice(-1);
-        setReferences(updatedReferences);
+    const handleExamCategorySelect = (key) => {
+        const selectedCategory = examCategories.find(
+            (item) => item.key === key
+        );
+        const examCategory = selectedCategory
+            ? selectedCategory.label
+            : "Select exam category";
+        setSelectedExamCategory(examCategory);
+
+        if (examCategory !== "Select exam category") {
+            fetchQuestionPaper(examCategory);
+        }
     };
 
-    const handleSubmitAll = () => {
-        console.log("All references submitted:", references);
-        setReferences([{ title: "", link: "", image: [] }]);
-        message.success("All notes submitted successfully");
+    const handleSubmitAll = async () => {
+        if (!materialTitle || !materialLink) {
+            message.error("Please fill in all the fields before submitting.");
+            return;
+        }
+
+        const accessToken = localStorage.getItem("accessToken");
+        const payload = {
+            action: "create",
+            exam_category: selectedExamCategory,
+            material_type: "ref_books",
+            material_data: [{
+                title: materialTitle,
+                content: materialLink,
+            }],
+        };
+        console.log("payload", payload);
+
+        try {
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (response.ok) {
+                message.success("File uploaded successfully!");
+            } else {
+                const errorData = await response.json();
+                message.error(`Upload failed: ${errorData.message}`);
+            }
+        } catch (error) {
+            message.error("An error occurred while uploading the file.");
+            console.error("Upload error:", error);
+        }
     };
 
     const onMenuClick = ({ key }) => {
@@ -89,42 +208,61 @@ const References = () => {
                 </Menu>
             </Sider>
             <Layout>
-                <Header style={{ background: colorBgContainer }}>
-                    <div
-                        style={{
-                            textAlign: "center",
-                            color: "black",
-                            fontSize: 32,
-                            fontWeight: "bold",
-                        }}
-                    >
-                        Focus Admin Portal
-                    </div>
-                </Header>
-                <Layout
+                <Header
                     style={{
-                        padding: "24px 24px 24px",
-                        flexDirection: "row",
-                        gap: 24,
+                        background: "#f4f4f4",
+                        textAlign: "center",
+                        color: "black",
+                        fontSize: 32,
+                        fontWeight: "bold",
                     }}
                 >
+                    Focus Admin Portal
+                </Header>
+                <Layout style={{ padding: "24px 24px 24px" }}>
                     <Content
                         style={{
                             padding: 0,
                             margin: 0,
                             minHeight: 280,
-                            background: colorBgContainer,
-                            borderRadius: borderRadiusLG,
+                            background: "#fff",
+                            borderRadius: "8px",
                         }}
                     >
                         <div
                             style={{
-                                color: "black",
-                                fontSize: 24,
-                                padding: "24px 24px 0",
+                                display: "flex",
+                                flexDirection: "row",
+                                width: "100%",
+                                justifyContent: "space-between",
                             }}
                         >
-                            References Section
+                            <div
+                                style={{
+                                    color: "black",
+                                    fontSize: 24,
+                                    padding: "24px 24px 0",
+                                }}
+                            >
+                                References Section
+                            </div>
+
+                            <button
+                                style={{
+                                    margin: "24px",
+                                    padding: "10px 20px",
+                                    backgroundColor: "#007bff",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "5px",
+                                    cursor: "pointer",
+                                }}
+                                onClick={() => {
+                                    window.location.href = "/edit-reference";
+                                }}
+                            >
+                                Edit Notes
+                            </button>
                         </div>
                         <hr
                             style={{
@@ -134,118 +272,158 @@ const References = () => {
                             }}
                         />
 
-                        {references.map((reference, index) => (
-                            <div
-                                key={index}
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                flexDirection: "row",
+                                marginBottom: "20px",
+                                padding: "20px",
+                            }}
+                        >
+                            <Form
                                 style={{
+                                    minWidth: "32vw",
                                     display: "flex",
-                                    justifyContent: "center",
                                     flexDirection: "row",
-                                    marginBottom: "20px",
+                                    gap: "20px",
+                                    alignItems: "center",
+                                    border: "1px solid #e0e0e0",
+                                    padding: 20,
+                                    borderRadius: "8px",
                                 }}
                             >
-                                <Form
-                                    style={{
-                                        width: "50%",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: "20px",
-                                        borderWidth: 1,
-                                        justifyContent: "center",
-                                        padding: 20,
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <div style={{ flex: 2 }}>
-                                        <Form.Item
-                                            label={`Enter Reference Title`}
-                                            labelCol={{
-                                                style: {
-                                                    minWidth: "180px",
-                                                    display: "flex",
-                                                    alignItems: "start",
-                                                },
-                                            }}
-                                        >
-                                            <Input
-                                                placeholder="Enter Reference Title"
-                                                value={reference.title}
-                                                onChange={(e) =>
-                                                    handleChange(
-                                                        index,
-                                                        "title",
-                                                        e.target.value
-                                                    )
-                                                }
-                                                style={{ minWidth: "400px" }}
-                                            />
-                                        </Form.Item>
-                                        <Form.Item
-                                            label="Enter Reference Link"
-                                            labelCol={{
-                                                style: {
-                                                    minWidth: "180px",
-                                                    display: "flex",
-                                                    alignItems: "start",
-                                                },
-                                            }}
-                                        >
-                                            <Input
-                                                placeholder="Enter Reference Link"
-                                                value={reference.link}
-                                                onChange={(e) =>
-                                                    handleChange(
-                                                        index,
-                                                        "link",
-                                                        e.target.value
-                                                    )
-                                                }
-                                                style={{ minWidth: "400px" }}
-                                            />
-                                        </Form.Item>
-                                    </div>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            height: 200,
-                                            minWidth: "580px",
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            border: "2px dashed #d9d9d9",
-                                            background: "none",
-                                            width: "150px",
-                                            flexDirection: "column",
-                                            borderRadius: "8px",
+                                <div style={{ flex: 2 }}>
+                                    <Form.Item
+                                        labelCol={{
+                                            style: {
+                                                display: "flex",
+                                                width: "140px",
+                                            },
                                         }}
                                     >
-                                        <Form.Item
-                                            valuePropName="fileList"
-                                            getValueFromEvent={normFile}
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                width: "100%",
+                                            }}
                                         >
-                                            <Upload
-                                                action="/upload.do"
-                                                listType="picture-card"
-                                                fileList={reference.image}
-                                                onChange={(file) =>
-                                                    handleFileChange(
-                                                        index,
-                                                        file
-                                                    )
-                                                }
-                                                maxCount={1}
+                                            <Dropdown
+                                                menu={{
+                                                    items: masterCategoryItems.map(
+                                                        (item) => ({
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleCategorySelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
+                                                        })
+                                                    ),
+                                                }}
+                                                trigger={["click"]}
                                             >
-                                                {reference.image.length < 1 && (
-                                                    <button type="button">
-                                                        <PlusOutlined />
-                                                        <div>Upload Image</div>
-                                                    </button>
-                                                )}
-                                            </Upload>
-                                        </Form.Item>
-                                    </div>
-                                </Form>
-                            </div>
-                        ))}
+                                                <a
+                                                    onClick={(e) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    <Space>
+                                                        <Button>
+                                                            {
+                                                                selectedMasterCategory
+                                                            }
+                                                            <DownOutlined />
+                                                        </Button>
+                                                    </Space>
+                                                </a>
+                                            </Dropdown>
+                                            <Dropdown
+                                                menu={{
+                                                    items: examCategories.map(
+                                                        (item) => ({
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleExamCategorySelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
+                                                        })
+                                                    ),
+                                                }}
+                                                trigger={["click"]}
+                                                disabled={
+                                                    selectedMasterCategory ===
+                                                    "Select master category"
+                                                }
+                                            >
+                                                <a
+                                                    onClick={(e) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    <Space>
+                                                        <Button
+                                                            disabled={
+                                                                selectedMasterCategory ===
+                                                                "Select master category"
+                                                            }
+                                                        >
+                                                            {
+                                                                selectedExamCategory
+                                                            }
+                                                            <DownOutlined />
+                                                        </Button>
+                                                    </Space>
+                                                </a>
+                                            </Dropdown>
+                                        </div>
+                                    </Form.Item>
+                                    <Form.Item
+                                        label={`Enter Title`}
+                                        labelCol={{ span: 24 }}
+                                        wrapperCol={{ span: 24 }}
+                                    >
+                                        <Input
+                                            placeholder="Enter Title"
+                                            value={materialTitle}
+                                            onChange={(e) =>
+                                                setMaterialTitle(e.target.value)
+                                            }
+                                            style={{ width: "100%" }}
+                                        />
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        label={`Enter Link`}
+                                        labelCol={{ span: 24 }}
+                                        wrapperCol={{ span: 24 }}
+                                    >
+                                        <Input
+                                            placeholder="Enter Title"
+                                            value={materialLink}
+                                            onChange={(e) =>
+                                                setMaterialLink(e.target.value)
+                                            }
+                                            style={{ width: "100%" }}
+                                        />
+                                    </Form.Item>
+                                </div>
+                            </Form>
+                        </div>
                         <Form.Item
                             style={{
                                 display: "flex",
@@ -255,9 +433,9 @@ const References = () => {
                             <Button
                                 type="primary"
                                 onClick={handleSubmitAll}
-                                style={{ width: "100%" }}
+                                style={{ background: "#4CAF50" }}
                             >
-                                Submit Reference
+                                Submit
                             </Button>
                         </Form.Item>
                     </Content>

@@ -16,8 +16,8 @@ import "../styles.css";
 const { Dragger } = Upload;
 const { Header, Content, Sider } = Layout;
 
-const EditNotes = () => {
-      const [fileBase64, setFileBase64] = useState("");
+const EditQuestionPaper = () => {
+    const [fileBase64, setFileBase64] = useState("");
     const navigate = useNavigate();
     const [selectedMasterCategory, setSelectedMasterCategory] = useState(
         "Select master category"
@@ -32,10 +32,9 @@ const EditNotes = () => {
         "Select exam category"
     );
 
-
     const handleExamMenuClick = (label, key) => {
         const selectedNote = examNames.find((item) => item.label === label);
-        
+
         console.log(examNames);
         if (selectedNote) {
             setMaterialTitle(selectedNote.label);
@@ -69,8 +68,6 @@ const EditNotes = () => {
         };
         reader.readAsDataURL(file);
     };
-
-
 
     useEffect(() => {
         const fetchMasterCategories = async () => {
@@ -138,7 +135,7 @@ const EditNotes = () => {
         }
     };
 
-    const fetchStudyMaterials = async (examCategory) => {
+    const fetchQuestionPaper = async (examCategory) => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
@@ -152,7 +149,7 @@ const EditNotes = () => {
                     body: JSON.stringify({
                         exam_category: examCategory,
                         action: "read",
-                        material_type: "study_materials",
+                        material_type: "pyqs",
                     }),
                 }
             );
@@ -163,7 +160,7 @@ const EditNotes = () => {
 
             const data = await response.json();
             setExamNames(
-                data.data.material.study_materials.map((material) => ({
+                data.data.material.pyqs.map((material) => ({
                     label: material.title,
                     key: material._id,
                 }))
@@ -197,14 +194,14 @@ const EditNotes = () => {
         setSelectedExamCategory(examCategory);
 
         if (examCategory !== "Select exam category") {
-            fetchStudyMaterials(examCategory);
+            fetchQuestionPaper(examCategory);
         }
     };
 
-        const handleSubmitAll = async () => {
-            console.log("materialTitle     ", materialTitle);
-            console.log("base     ", fileBase64);
-        if (!materialTitle || !fileBase64 ) {
+    const handleSubmitAll = async () => {
+        console.log("materialTitle     ", materialTitle);
+        console.log("base     ", fileBase64);
+        if (!materialTitle || !fileBase64) {
             message.error("Please fill in all the fields before submitting.");
             return;
         }
@@ -213,7 +210,7 @@ const EditNotes = () => {
         const payload = {
             action: "update",
             exam_category: selectedExamCategory,
-            material_type: "study_materials",
+            material_type: "pyqs",
             material_object_id: id,
             updateField: {
                 title: materialTitle,
@@ -223,14 +220,17 @@ const EditNotes = () => {
         console.log("payload", payload);
 
         try {
-            const response = await fetch("https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify(payload),
-            });
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
 
             if (response.ok) {
                 message.success("File uploaded successfully!");
@@ -257,7 +257,6 @@ const EditNotes = () => {
             navigate("/upload-current-affairs");
         }
     };
-
 
     return (
         <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
@@ -313,7 +312,7 @@ const EditNotes = () => {
                                 padding: "24px 24px 0",
                             }}
                         >
-                            Edit Notes Section
+                            Edit Question Paper Section
                         </div>
                         <hr
                             style={{
@@ -539,4 +538,4 @@ const EditNotes = () => {
     );
 };
 
-export default EditNotes;
+export default EditQuestionPaper;
