@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-    PlusOutlined,
-    DeleteOutlined,
-    DownOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, DownOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
     Layout,
@@ -15,7 +11,6 @@ import {
     message,
     Dropdown,
     Space,
-    MenuProps,
     Upload,
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
@@ -34,6 +29,8 @@ const ExamQuestionScreen = () => {
     const [globalPositiveMark, setGlobalPositiveMark] = useState();
     const [globalNegativeMark, setGlobalNegativeMark] = useState();
     const [image, setImage] = useState(null);
+    const [masterImage, setMasterImage] = useState(null);
+    const [examCategoryImage, setExamCategoryImage] = useState(null);
 
     const getBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -176,8 +173,16 @@ const ExamQuestionScreen = () => {
         if (isValid) {
             try {
                 let base64Image = null;
+                let masterCatBase64Image = null;
+                let examCatBase64Image = null;
                 if (image) {
                     base64Image = await getBase64(image);
+                }
+                if (masterImage) {
+                    masterCatBase64Image = await getBase64(masterImage);
+                }
+                if (examCategoryImage) {
+                    examCatBase64Image = await getBase64(examCategoryImage);
                 }
 
                 const payload = {
@@ -195,6 +200,14 @@ const ExamQuestionScreen = () => {
                         negative_mark: q.negativeMark,
                     })),
                 };
+                const masterCategoryPayload = {
+                    master_category: selectedMasterCategory,
+                    image: masterCatBase64Image,
+                };
+                const examCategoryPayload = {
+                    exam_category: selectedExamCategory,
+                    image: examCatBase64Image,
+                };
 
                 const accessToken = localStorage.getItem("accessToken");
                 const response = await fetch(
@@ -208,11 +221,39 @@ const ExamQuestionScreen = () => {
                         body: JSON.stringify(payload),
                     }
                 );
+                const masterCatImageUploadResponse = await fetch(
+                    "https://examappbackend.onrender.com/api/v1/app/admin/add-master-category-image",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify(masterCategoryPayload),
+                    }
+                );
+                const ExamCatImageUploadResponse = await fetch(
+                    "https://examappbackend.onrender.com/api/v1/app/admin/add-exam-category-image",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify(examCategoryPayload),
+                    }
+                );
 
-                if (response.ok) {
+                if (
+                    response.ok &&
+                    masterCatImageUploadResponse.ok &&
+                    ExamCatImageUploadResponse.ok
+                ) {
                     message.success("All data submitted successfully!");
                     setExamName("");
                     setImage(null);
+                    setMasterImage(null);
+                    setExamCategoryImage(null);
                     setQuestions([
                         {
                             question: "",
@@ -330,41 +371,58 @@ const ExamQuestionScreen = () => {
         }
     };
 
-    const handleImageUpload = (file) => {
+    const handleExamImageUpload = (file) => {
         setImage(file);
+        return false;
+    };
+    const handleMasterImageUpload = (file) => {
+        setMasterImage(file);
+        return false;
+    };
+    const handleExamCategoryImageUpload = (file) => {
+        setExamCategoryImage(file);
         return false;
     };
 
     const handleRemoveImage = () => {
         setImage(null);
     };
+    const handleRemoveMasterImage = () => {
+        setMasterImage(null);
+    };
+    const handleRemoveExamCatImage = () => {
+        setExamCategoryImage(null);
+    };
 
-        const handleCategorySelect = (key) => {
-            const selectedCategory = masterCategoryItems.find(
-                (item) => item.key === key
-            );
-            const masterCategory = selectedCategory
-                ? selectedCategory.label
-                : "Select master category";
-            setSelectedMasterCategory(masterCategory);
+const handleCategorySelect = (key) => {
+    const selectedCategory = masterCategoryItems.find(
+        (item) => item.key === key
+    );
 
-            if (masterCategory !== "Select master category") {
-                fetchExamCategories(masterCategory);
-            }
-        };
-        const handleExamCategorySelect = (key) => {
-            const selectedCategory = examCategories.find(
-                (item) => item.key === key
-            );
-            const examCategory = selectedCategory
-                ? selectedCategory.label
-                : "Select exam category";
-            setSelectedExamCategory(examCategory);
+    const masterCategory = selectedCategory ? selectedCategory.label : key; // Use input value as master category
 
-            if (examCategory !== "Select exam category") {
-                fetchExamNames(examCategory);
-            }
-        };
+    setSelectedMasterCategory(masterCategory);
+
+    if (masterCategory) {
+        fetchExamCategories(masterCategory);
+    }
+};
+
+const handleExamCategorySelect = (key) => {
+    const selectedExamCategory = examCategories.find(
+        (item) => item.key === key
+    );
+
+    const examCategory = selectedExamCategory
+        ? selectedExamCategory.label
+        : key;
+
+    setSelectedExamCategory(examCategory);
+
+    if (examCategory) {
+        fetchExamNames(examCategory);
+    }
+};
     const onMenuClick = ({ key }) => {
         if (key === "2") {
             navigate("/live-test-questions");
@@ -558,104 +616,159 @@ const ExamQuestionScreen = () => {
                                                 display: "flex",
                                                 justifyContent: "space-between",
                                                 width: "100%",
+                                                flexDirection: "column",
                                             }}
                                         >
-                                            <Dropdown
-                                                menu={{
-                                                    items: masterCategoryItems.map(
-                                                        (item) => ({
-                                                            key: item.key,
-                                                            label: (
-                                                                <a
-                                                                    onClick={() =>
-                                                                        handleCategorySelect(
-                                                                            item.key
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {item.label}
-                                                                </a>
-                                                            ),
-                                                        })
-                                                    ),
+                                            <div
+                                                style={{
+                                                    margin: "10px",
                                                 }}
-                                                trigger={["click"]}
                                             >
-                                                <a
-                                                    onClick={(e) =>
-                                                        e.preventDefault()
-                                                    }
+                                                <Dropdown
+                                                    menu={{
+                                                        items: masterCategoryItems.map(
+                                                            (item) => ({
+                                                                key: item.key,
+                                                                label: (
+                                                                    <a
+                                                                        onClick={() =>
+                                                                            handleCategorySelect(
+                                                                                item.key
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            item.label
+                                                                        }
+                                                                    </a>
+                                                                ),
+                                                            })
+                                                        ),
+                                                    }}
+                                                    trigger={["click"]}
                                                 >
-                                                    <Space>
-                                                        <Button>
-                                                            {
-                                                                selectedMasterCategory
-                                                            }
-                                                            <DownOutlined />
-                                                        </Button>
-                                                    </Space>
-                                                </a>
-                                            </Dropdown>
-                                            <Dropdown
-                                                menu={{
-                                                    items: examCategories.map(
-                                                        (item) => ({
-                                                            key: item.key,
-                                                            label: (
-                                                                <a
-                                                                    onClick={() =>
-                                                                        handleExamCategorySelect(
-                                                                            item.key
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {item.label}
-                                                                </a>
-                                                            ),
-                                                        })
-                                                    ),
+                                                    <a
+                                                        onClick={(e) =>
+                                                            e.preventDefault()
+                                                        }
+                                                    >
+                                                        <Space>
+                                                            <Button>
+                                                                {selectedMasterCategory ||
+                                                                    "Select Master Category"}
+                                                                <DownOutlined />
+                                                            </Button>
+                                                        </Space>
+                                                    </a>
+                                                </Dropdown>
+
+                                                <div
+                                                    style={{
+                                                        marginTop: "10px",
+                                                    }}
+                                                >
+                                                    <Input
+                                                        placeholder="Enter Master Category"
+                                                        onChange={(e) =>
+                                                            handleCategorySelect(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        style={{
+                                                            width: "300px",
+                                                        }}
+                                                        onPressEnter={(e) =>
+                                                            handleCategorySelect(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                style={{
+                                                    margin: "10px",
                                                 }}
-                                                trigger={["click"]}
-                                                disabled={
-                                                    selectedMasterCategory ===
-                                                    "Select master category"
-                                                }
                                             >
-                                                <a
-                                                    onClick={(e) =>
-                                                        e.preventDefault()
-                                                    }
+                                                <Dropdown
+                                                    menu={{
+                                                        items: examCategories.map(
+                                                            (item) => ({
+                                                                key: item.key,
+                                                                label: (
+                                                                    <a
+                                                                        onClick={() =>
+                                                                            handleExamCategorySelect(
+                                                                                item.key
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            item.label
+                                                                        }
+                                                                    </a>
+                                                                ),
+                                                            })
+                                                        ),
+                                                    }}
+                                                    trigger={["click"]}
                                                 >
-                                                    <Space>
-                                                        <Button
-                                                            disabled={
-                                                                selectedMasterCategory ===
-                                                                "Select master category"
-                                                            }
-                                                        >
-                                                            {
-                                                                selectedExamCategory
-                                                            }
-                                                            <DownOutlined />
-                                                        </Button>
-                                                    </Space>
-                                                </a>
-                                            </Dropdown>
-                                            <Input
-                                                placeholder="Exam name"
-                                                value={examName}
-                                                onChange={(e) =>
-                                                    setExamName(e.target.value)
-                                                }
-                                                style={{ width: "300px" }}
-                                            />
+                                                    <a
+                                                        onClick={(e) =>
+                                                            e.preventDefault()
+                                                        }
+                                                    >
+                                                        <Space>
+                                                            <Button>
+                                                                {selectedExamCategory ||
+                                                                    "Select Exam Category"}
+                                                                <DownOutlined />
+                                                            </Button>
+                                                        </Space>
+                                                    </a>
+                                                </Dropdown>
+
+                                                <div>
+                                                    <Input
+                                                        placeholder="Enter Exam Category"
+                                                        onChange={(e) =>
+                                                            handleExamCategorySelect(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        style={{
+                                                            width: "300px",
+                                                            marginTop: "10px",
+                                                        }}
+                                                        onPressEnter={(e) =>
+                                                            handleExamCategorySelect(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div style={{ margin: "10px" }}>
+                                                <Input
+                                                    placeholder="Exam name"
+                                                    value={examName}
+                                                    onChange={(e) =>
+                                                        setExamName(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    style={{ width: "300px" }}
+                                                />
+                                            </div>
                                         </div>
                                         <div
                                             style={{
                                                 display: "flex",
                                                 justifyContent: "space-between",
                                                 width: "100%",
-                                                marginTop: "20px",
+                                                margin: "10px",
                                             }}
                                         >
                                             <Input
@@ -693,7 +806,7 @@ const ExamQuestionScreen = () => {
                                     <Upload
                                         action="/upload.do"
                                         listType="picture-card"
-                                        beforeUpload={handleImageUpload}
+                                        beforeUpload={handleExamImageUpload}
                                         maxCount={1}
                                         onRemove={handleRemoveImage}
                                         fileList={image ? [image] : []}
@@ -713,7 +826,75 @@ const ExamQuestionScreen = () => {
                                                         color: "black",
                                                     }}
                                                 >
-                                                    Upload Image
+                                                    Upload Exam Image
+                                                </div>
+                                            </button>
+                                        )}
+                                    </Upload>
+                                </Form.Item>
+                                <Form.Item valuePropName="fileList">
+                                    <Upload
+                                        action="/upload.do"
+                                        listType="picture-card"
+                                        beforeUpload={handleMasterImageUpload}
+                                        maxCount={1}
+                                        onRemove={handleRemoveMasterImage}
+                                        fileList={
+                                            masterImage ? [masterImage] : []
+                                        }
+                                    >
+                                        {!masterImage && (
+                                            <button
+                                                style={{
+                                                    border: 0,
+                                                    background: "none",
+                                                }}
+                                                type="button"
+                                            >
+                                                <PlusOutlined />
+                                                <div
+                                                    style={{
+                                                        marginTop: 8,
+                                                        color: "black",
+                                                    }}
+                                                >
+                                                    Master Category Image
+                                                </div>
+                                            </button>
+                                        )}
+                                    </Upload>
+                                </Form.Item>
+                                <Form.Item valuePropName="fileList">
+                                    <Upload
+                                        action="/upload.do"
+                                        listType="picture-card"
+                                        beforeUpload={
+                                            handleExamCategoryImageUpload
+                                        }
+                                        maxCount={1}
+                                        onRemove={handleRemoveExamCatImage}
+                                        fileList={
+                                            examCategoryImage
+                                                ? [examCategoryImage]
+                                                : []
+                                        }
+                                    >
+                                        {!examCategoryImage && (
+                                            <button
+                                                style={{
+                                                    border: 0,
+                                                    background: "none",
+                                                }}
+                                                type="button"
+                                            >
+                                                <PlusOutlined />
+                                                <div
+                                                    style={{
+                                                        marginTop: 8,
+                                                        color: "black",
+                                                    }}
+                                                >
+                                                    Exam Category Image
                                                 </div>
                                             </button>
                                         )}
