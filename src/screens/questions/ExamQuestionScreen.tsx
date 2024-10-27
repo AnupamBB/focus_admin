@@ -12,6 +12,9 @@ import {
     Dropdown,
     Space,
     Upload,
+    TimePicker,
+    Flex,
+    Spin
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
@@ -31,6 +34,9 @@ const ExamQuestionScreen = () => {
     const [image, setImage] = useState(null);
     const [masterImage, setMasterImage] = useState(null);
     const [examCategoryImage, setExamCategoryImage] = useState(null);
+    const [timeValue, setTimeValue] = useState<Dayjs | null>(null);
+    const [loading, setLoading] = useState(false); 
+
 
     const getBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -118,109 +124,117 @@ const ExamQuestionScreen = () => {
         }
     };
 
-    const handleSubmitAll = async () => {
-        let isValid = true;
+const handleSubmitAll = async () => {
+    let isValid = true;
 
-        if (!examName.trim()) {
-            message.error("Please provide an exam name.");
+    // Validation checks
+    if (!examName.trim()) {
+        message.error("Please provide an exam name.");
+        isValid = false;
+        return;
+    }
+    if (selectedMasterCategory === "Select master category") {
+        message.error("Please select a master category.");
+        isValid = false;
+        return;
+    }
+    if (selectedExamCategory === "Select exam category") {
+        message.error("Please select an exam category.");
+        isValid = false;
+        return;
+    }
+
+    questions.forEach((question, index) => {
+        if (!question.question.trim()) {
+            message.error(`Question ${index + 1} is missing.`);
             isValid = false;
             return;
         }
-
-        if (selectedMasterCategory === "Select master category") {
-            message.error("Please select a master category.");
+        if (question.options.length < 2) {
+            message.error(
+                `Question ${index + 1} must have at least two options.`
+            );
             isValid = false;
             return;
         }
-        if (selectedExamCategory === "Select exam category") {
-            message.error("Please select an exam category.");
+        if (question.correctOption === null) {
+            message.error(
+                `Please select a correct option for Question ${index + 1}.`
+            );
             isValid = false;
             return;
         }
+        if (
+            question.positiveMark === undefined ||
+            question.negativeMark === undefined
+        ) {
+            message.error(`Please provide marks for Question ${index + 1}.`);
+            isValid = false;
+            return;
+        }
+    });
 
-        questions.forEach((question, index) => {
-            if (!question.question.trim()) {
-                message.error(`Question ${index + 1} is missing.`);
-                isValid = false;
-                return;
-            }
-            if (question.options.length < 2) {
-                message.error(
-                    `Question ${index + 1} must have at least two options.`
-                );
-                isValid = false;
-                return;
-            }
-            if (question.correctOption === null) {
-                message.error(
-                    `Please select a correct option for Question ${index + 1}.`
-                );
-                isValid = false;
-                return;
-            }
-            if (
-                question.positiveMark === undefined ||
-                question.negativeMark === undefined
-            ) {
-                message.error(
-                    `Please provide marks for Question ${index + 1}.`
-                );
-                isValid = false;
-                return;
-            }
-        });
+    if (isValid) {
+        setLoading(true);
+        try {
+            let base64Image = image ? await getBase64(image) : null;
+            let masterCatBase64Image = masterImage
+                ? await getBase64(masterImage)
+                : null;
+            let examCatBase64Image = examCategoryImage
+                ? await getBase64(examCategoryImage)
+                : null;
 
-        if (isValid) {
-            try {
-                let base64Image = null;
-                let masterCatBase64Image = null;
-                let examCatBase64Image = null;
-                if (image) {
-                    base64Image = await getBase64(image);
-                }
-                if (masterImage) {
-                    masterCatBase64Image = await getBase64(masterImage);
-                }
-                if (examCategoryImage) {
-                    examCatBase64Image = await getBase64(examCategoryImage);
-                }
+            const durationInSeconds = timeValue
+                ? timeValue.hour() * 3600 + timeValue.minute() * 60
+                : 0;
 
-                const payload = {
-                    exam_name: examName,
-                    exam_image: base64Image,
-                    exam_category: selectedExamCategory,
-                    master_category: selectedMasterCategory,
-                    duration: 3600,
-                    questions: questions.map((q) => ({
-                        question_title: q.question,
-                        options: q.options.map((opt) => opt.value),
-                        correct_answer: q.options[q.correctOption]?.value,
-                        question_category: "Question Category",
-                        positive_mark: q.positiveMark,
-                        negative_mark: q.negativeMark,
-                    })),
-                };
+            const payload = {
+                exam_name: examName,
+                exam_image: base64Image,
+                exam_category: selectedExamCategory,
+                master_category: selectedMasterCategory,
+                duration: durationInSeconds,
+                questions: questions.map((q) => ({
+                    question_title: q.question,
+                    options: q.options.map((opt) => opt.value),
+                    correct_answer: q.options[q.correctOption]?.value,
+                    question_category: "Question Category",
+                    positive_mark: q.positiveMark,
+                    negative_mark: q.negativeMark,
+                })),
+            };
+
+            const accessToken = localStorage.getItem("accessToken");
+
+            // First API call - add exam
+            const response = await fetch(
+                "https://examappbackend.onrender.com/api/v1/app/admin/add-exam",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+            const responseData = await response.json();
+            if (responseData.statuscode !== 200) {
+                message.error(
+                    "Failed to submit exam data: " + responseData.message
+                );
+                return; // Exit if the first API call fails
+            }
+
+            // Proceed only if the first API call was successful
+
+            // Check if the user wants to upload master category image
+            if (masterCatBase64Image) {
                 const masterCategoryPayload = {
                     master_category: selectedMasterCategory,
                     image: masterCatBase64Image,
                 };
-                const examCategoryPayload = {
-                    exam_category: selectedExamCategory,
-                    image: examCatBase64Image,
-                };
-
-                const accessToken = localStorage.getItem("accessToken");
-                const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/admin/add-exam",
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${accessToken}`,
-                        },
-                        body: JSON.stringify(payload),
-                    }
-                );
                 const masterCatImageUploadResponse = await fetch(
                     "https://examappbackend.onrender.com/api/v1/app/admin/add-master-category-image",
                     {
@@ -232,7 +246,23 @@ const ExamQuestionScreen = () => {
                         body: JSON.stringify(masterCategoryPayload),
                     }
                 );
-                const ExamCatImageUploadResponse = await fetch(
+                const masterCatData = await masterCatImageUploadResponse.json();
+                if (masterCatData.statuscode !== 200) {
+                    message.error(
+                        "Failed to submit master category data: " +
+                            masterCatData.message
+                    );
+                    return; // Exit if the second API call fails
+                }
+            }
+
+            // Check if the user wants to upload exam category image
+            if (examCatBase64Image) {
+                const examCategoryPayload = {
+                    exam_category: selectedExamCategory,
+                    image: examCatBase64Image,
+                };
+                const examCatImageUploadResponse = await fetch(
                     "https://examappbackend.onrender.com/api/v1/app/admin/add-exam-category-image",
                     {
                         method: "POST",
@@ -243,34 +273,40 @@ const ExamQuestionScreen = () => {
                         body: JSON.stringify(examCategoryPayload),
                     }
                 );
-
-                if (
-                    response.ok &&
-                    masterCatImageUploadResponse.ok &&
-                    ExamCatImageUploadResponse.ok
-                ) {
-                    message.success("All data submitted successfully!");
-                    setExamName("");
-                    setImage(null);
-                    setMasterImage(null);
-                    setExamCategoryImage(null);
-                    setQuestions([
-                        {
-                            question: "",
-                            description: "",
-                            options: [{ value: "", correct: false }],
-                            correctOption: null,
-                        },
-                    ]);
-                } else {
-                    message.error("Failed to submit exam data.");
+                const examCatData = await examCatImageUploadResponse.json();
+                if (examCatData.statuscode !== 200) {
+                    message.error(
+                        "Failed to submit exam category data: " +
+                            examCatData.message
+                    );
+                    return; // Exit if the third API call fails
                 }
-            } catch (error) {
-                console.error("Error submitting exam data:", error);
-                message.error("Error submitting exam data.");
             }
+
+            // Success message if all API calls succeed
+            message.success("All data submitted successfully!");
+            setExamName("");
+            setImage(null);
+            setMasterImage(null);
+            setExamCategoryImage(null);
+            setQuestions([
+                {
+                    question: "",
+                    description: "",
+                    options: [{ value: "", correct: false }],
+                    correctOption: null,
+                },
+            ]);
+        } catch (error) {
+            console.error("Error submitting exam data:", error);
+            message.error("Error submitting exam data.");
+        } finally {
+            setLoading(false);
         }
-    };
+    }
+};
+
+
 
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
@@ -393,6 +429,14 @@ const ExamQuestionScreen = () => {
     const handleRemoveExamCatImage = () => {
         setExamCategoryImage(null);
     };
+    const onTimeChange = (time: Dayjs | null) => {
+        if (time) {
+            setTimeValue(time);
+            message.success(`Time selected: ${time.format("HH:mm")}`);
+        } else {
+            setTimeValue(null);
+        }
+    };
 
 const handleCategorySelect = (key) => {
     const selectedCategory = masterCategoryItems.find(
@@ -439,6 +483,24 @@ const handleExamCategorySelect = (key) => {
 
     return (
         <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
+            {loading && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        backgroundColor: "rgba(255, 255, 255, 0.7)",
+                        zIndex: 1000,
+                    }}
+                >
+                    <Spin size="large" />
+                </div>
+            )}
             <Sider
                 width={200}
                 style={{
@@ -762,6 +824,14 @@ const handleExamCategorySelect = (key) => {
                                                     style={{ width: "300px" }}
                                                 />
                                             </div>
+                                            <div style={{ margin: "10px" }}>
+                                                <TimePicker
+                                                    value={timeValue}
+                                                    onChange={onTimeChange}
+                                                    format="HH:mm"
+                                                    placeholder="Select duration"
+                                                />
+                                            </div>
                                         </div>
                                         <div
                                             style={{
@@ -802,104 +872,115 @@ const handleExamCategorySelect = (key) => {
                                         </div>
                                     </Form.Item>
                                 </div>
-                                <Form.Item valuePropName="fileList">
-                                    <Upload
-                                        action="/upload.do"
-                                        listType="picture-card"
-                                        beforeUpload={handleExamImageUpload}
-                                        maxCount={1}
-                                        onRemove={handleRemoveImage}
-                                        fileList={image ? [image] : []}
-                                    >
-                                        {!image && (
-                                            <button
-                                                style={{
-                                                    border: 0,
-                                                    background: "none",
-                                                }}
-                                                type="button"
-                                            >
-                                                <PlusOutlined />
-                                                <div
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        width: "100%",
+                                        marginLeft: "80px",
+                                    }}
+                                >
+                                    <Form.Item valuePropName="fileList">
+                                        <Upload
+                                            action="/upload.do"
+                                            listType="picture-card"
+                                            beforeUpload={handleExamImageUpload}
+                                            maxCount={1}
+                                            onRemove={handleRemoveImage}
+                                            fileList={image ? [image] : []}
+                                        >
+                                            {!image && (
+                                                <button
                                                     style={{
-                                                        marginTop: 8,
-                                                        color: "black",
+                                                        border: 0,
+                                                        background: "none",
                                                     }}
+                                                    type="button"
                                                 >
-                                                    Upload Exam Image
-                                                </div>
-                                            </button>
-                                        )}
-                                    </Upload>
-                                </Form.Item>
-                                <Form.Item valuePropName="fileList">
-                                    <Upload
-                                        action="/upload.do"
-                                        listType="picture-card"
-                                        beforeUpload={handleMasterImageUpload}
-                                        maxCount={1}
-                                        onRemove={handleRemoveMasterImage}
-                                        fileList={
-                                            masterImage ? [masterImage] : []
-                                        }
-                                    >
-                                        {!masterImage && (
-                                            <button
-                                                style={{
-                                                    border: 0,
-                                                    background: "none",
-                                                }}
-                                                type="button"
-                                            >
-                                                <PlusOutlined />
-                                                <div
+                                                    <PlusOutlined />
+                                                    <div
+                                                        style={{
+                                                            marginTop: 8,
+                                                            color: "black",
+                                                        }}
+                                                    >
+                                                        Upload Exam Image
+                                                    </div>
+                                                </button>
+                                            )}
+                                        </Upload>
+                                    </Form.Item>
+                                    <Form.Item valuePropName="fileList">
+                                        <Upload
+                                            action="/upload.do"
+                                            listType="picture-card"
+                                            beforeUpload={
+                                                handleMasterImageUpload
+                                            }
+                                            maxCount={1}
+                                            onRemove={handleRemoveMasterImage}
+                                            fileList={
+                                                masterImage ? [masterImage] : []
+                                            }
+                                        >
+                                            {!masterImage && (
+                                                <button
                                                     style={{
-                                                        marginTop: 8,
-                                                        color: "black",
+                                                        border: 0,
+                                                        background: "none",
                                                     }}
+                                                    type="button"
                                                 >
-                                                    Master Category Image
-                                                </div>
-                                            </button>
-                                        )}
-                                    </Upload>
-                                </Form.Item>
-                                <Form.Item valuePropName="fileList">
-                                    <Upload
-                                        action="/upload.do"
-                                        listType="picture-card"
-                                        beforeUpload={
-                                            handleExamCategoryImageUpload
-                                        }
-                                        maxCount={1}
-                                        onRemove={handleRemoveExamCatImage}
-                                        fileList={
-                                            examCategoryImage
-                                                ? [examCategoryImage]
-                                                : []
-                                        }
-                                    >
-                                        {!examCategoryImage && (
-                                            <button
-                                                style={{
-                                                    border: 0,
-                                                    background: "none",
-                                                }}
-                                                type="button"
-                                            >
-                                                <PlusOutlined />
-                                                <div
+                                                    <PlusOutlined />
+                                                    <div
+                                                        style={{
+                                                            marginTop: 8,
+                                                            color: "black",
+                                                        }}
+                                                    >
+                                                        Master Category Image
+                                                    </div>
+                                                </button>
+                                            )}
+                                        </Upload>
+                                    </Form.Item>
+                                    <Form.Item valuePropName="fileList">
+                                        <Upload
+                                            action="/upload.do"
+                                            listType="picture-card"
+                                            beforeUpload={
+                                                handleExamCategoryImageUpload
+                                            }
+                                            maxCount={1}
+                                            onRemove={handleRemoveExamCatImage}
+                                            fileList={
+                                                examCategoryImage
+                                                    ? [examCategoryImage]
+                                                    : []
+                                            }
+                                        >
+                                            {!examCategoryImage && (
+                                                <button
                                                     style={{
-                                                        marginTop: 8,
-                                                        color: "black",
+                                                        border: 0,
+                                                        background: "none",
                                                     }}
+                                                    type="button"
                                                 >
-                                                    Exam Category Image
-                                                </div>
-                                            </button>
-                                        )}
-                                    </Upload>
-                                </Form.Item>
+                                                    <PlusOutlined />
+                                                    <div
+                                                        style={{
+                                                            marginTop: 8,
+                                                            color: "black",
+                                                        }}
+                                                    >
+                                                        Exam Category Image
+                                                    </div>
+                                                </button>
+                                            )}
+                                        </Upload>
+                                    </Form.Item>
+                                </div>
                             </Form>
                         </div>
 
