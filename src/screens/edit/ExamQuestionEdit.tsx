@@ -12,6 +12,7 @@ import {
     Dropdown,
     Space,
     Upload,
+    TimePicker,
 } from "antd";
 import "../styles.css";
 
@@ -32,6 +33,7 @@ const EditExamQuestion = () => {
     const [globalNegativeMark, setGlobalNegativeMark] = useState();
     const [image, setImage] = useState(null);
     const [examId, setExamId] = useState("");
+    const [timeValue, setTimeValue] = useState<Dayjs | null>(null);
 
     const getBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -222,7 +224,7 @@ const fetchExamNames = async (examCategory) => {
                             uid: "-1",
                             name: `${examData.exam_name}.png`,
                             status: "done",
-                            url: `data:image/png;base64,${imageData}`,
+                            url: imageData,
                         });
                     }
 
@@ -309,13 +311,17 @@ const fetchExamNames = async (examCategory) => {
                     base64Image = image;
                 }
 
+                const durationInSeconds = timeValue
+                    ? timeValue.hour() * 3600 + timeValue.minute() * 60
+                    : 0;
+
                 const payload = {
                     exam_id: examId,
                     exam_name: selectedExamName,
                     exam_image: base64Image,
                     exam_category: selectedExamCategory,
                     master_category: selectedMasterCategory,
-                    duration: 3600,
+                    duration: durationInSeconds,
                     questions: questions.map((q) => ({
                         question_title: q.question,
                         options: q.options.map((opt) => opt.value),
@@ -452,6 +458,14 @@ const fetchExamNames = async (examCategory) => {
 
     const handleRemoveImage = () => {
         setImage(null);
+    };
+    const onTimeChange = (time: Dayjs | null) => {
+        if (time) {
+            setTimeValue(time);
+            message.success(`Time selected: ${time.format("HH:mm")}`);
+        } else {
+            setTimeValue(null);
+        }
     };
 
     const onMenuClick = ({ key }) => {
@@ -688,6 +702,14 @@ const fetchExamNames = async (examCategory) => {
                                                     </Space>
                                                 </a>
                                             </Dropdown>
+                                        </div>
+                                        <div style={{ marginTop: "20px" }}>
+                                            <TimePicker
+                                                value={timeValue}
+                                                onChange={onTimeChange}
+                                                format="HH:mm"
+                                                placeholder="Select duration"
+                                            />
                                         </div>
                                         <div
                                             style={{
