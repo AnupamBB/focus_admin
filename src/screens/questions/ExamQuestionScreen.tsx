@@ -13,7 +13,7 @@ import {
     Space,
     Upload,
     TimePicker,
-    Spin
+    Spin,
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
@@ -34,8 +34,7 @@ const ExamQuestionScreen = () => {
     const [masterImage, setMasterImage] = useState(null);
     const [examCategoryImage, setExamCategoryImage] = useState(null);
     const [timeValue, setTimeValue] = useState<Dayjs | null>(null);
-    const [loading, setLoading] = useState(false); 
-
+    const [loading, setLoading] = useState(false);
 
     const getBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -60,7 +59,7 @@ const ExamQuestionScreen = () => {
             const accessToken = localStorage.getItem("accessToken");
             try {
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-master-categories",
                     {
                         method: "GET",
                         headers: {
@@ -94,7 +93,7 @@ const ExamQuestionScreen = () => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-exam-category",
                 {
                     method: "POST",
                     headers: {
@@ -123,189 +122,190 @@ const ExamQuestionScreen = () => {
         }
     };
 
-const handleSubmitAll = async () => {
-    let isValid = true;
+    const handleSubmitAll = async () => {
+        let isValid = true;
 
-    // Validation checks
-    if (!examName.trim()) {
-        message.error("Please provide an exam name.");
-        isValid = false;
-        return;
-    }
-    if (selectedMasterCategory === "Select master category") {
-        message.error("Please select a master category.");
-        isValid = false;
-        return;
-    }
-    if (selectedExamCategory === "Select exam category") {
-        message.error("Please select an exam category.");
-        isValid = false;
-        return;
-    }
-
-    questions.forEach((question, index) => {
-        if (!question.question.trim()) {
-            message.error(`Question ${index + 1} is missing.`);
+        // Validation checks
+        if (!examName.trim()) {
+            message.error("Please provide an exam name.");
             isValid = false;
             return;
         }
-        if (question.options.length < 2) {
-            message.error(
-                `Question ${index + 1} must have at least two options.`
-            );
+        if (selectedMasterCategory === "Select master category") {
+            message.error("Please select a master category.");
             isValid = false;
             return;
         }
-        if (question.correctOption === null) {
-            message.error(
-                `Please select a correct option for Question ${index + 1}.`
-            );
+        if (selectedExamCategory === "Select exam category") {
+            message.error("Please select an exam category.");
             isValid = false;
             return;
         }
-        if (
-            question.positiveMark === undefined ||
-            question.negativeMark === undefined
-        ) {
-            message.error(`Please provide marks for Question ${index + 1}.`);
-            isValid = false;
-            return;
-        }
-    });
 
-    if (isValid) {
-        setLoading(true);
-        try {
-            let base64Image = image ? await getBase64(image) : null;
-            let masterCatBase64Image = masterImage
-                ? await getBase64(masterImage)
-                : null;
-            let examCatBase64Image = examCategoryImage
-                ? await getBase64(examCategoryImage)
-                : null;
-
-            const durationInSeconds = timeValue
-                ? timeValue.hour() * 3600 + timeValue.minute() * 60
-                : 0;
-
-            const payload = {
-                exam_name: examName,
-                exam_image: base64Image,
-                exam_category: selectedExamCategory,
-                master_category: selectedMasterCategory,
-                duration: durationInSeconds,
-                questions: questions.map((q) => ({
-                    question_title: q.question,
-                    options: q.options.map((opt) => opt.value),
-                    correct_answer: q.options[q.correctOption]?.value,
-                    question_category: "Question Category",
-                    positive_mark: q.positiveMark,
-                    negative_mark: q.negativeMark,
-                })),
-            };
-
-            const accessToken = localStorage.getItem("accessToken");
-
-            // First API call - add exam
-            const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/admin/add-exam",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                    body: JSON.stringify(payload),
-                }
-            );
-            const responseData = await response.json();
-            if (responseData.statuscode !== 200) {
+        questions.forEach((question, index) => {
+            if (!question.question.trim()) {
+                message.error(`Question ${index + 1} is missing.`);
+                isValid = false;
+                return;
+            }
+            if (question.options.length < 2) {
                 message.error(
-                    "Failed to submit exam data: " + responseData.message
+                    `Question ${index + 1} must have at least two options.`
                 );
-                return; // Exit if the first API call fails
+                isValid = false;
+                return;
             }
-
-            // Proceed only if the first API call was successful
-
-            // Check if the user wants to upload master category image
-            if (masterCatBase64Image) {
-                const masterCategoryPayload = {
-                    master_category: selectedMasterCategory,
-                    image: masterCatBase64Image,
-                };
-                const masterCatImageUploadResponse = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/admin/add-master-category-image",
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${accessToken}`,
-                        },
-                        body: JSON.stringify(masterCategoryPayload),
-                    }
+            if (question.correctOption === null) {
+                message.error(
+                    `Please select a correct option for Question ${index + 1}.`
                 );
-                const masterCatData = await masterCatImageUploadResponse.json();
-                if (masterCatData.statuscode !== 200) {
-                    message.error(
-                        "Failed to submit master category data: " +
-                            masterCatData.message
-                    );
-                    return; // Exit if the second API call fails
-                }
+                isValid = false;
+                return;
             }
+            if (
+                question.positiveMark === undefined ||
+                question.negativeMark === undefined
+            ) {
+                message.error(
+                    `Please provide marks for Question ${index + 1}.`
+                );
+                isValid = false;
+                return;
+            }
+        });
 
-            // Check if the user wants to upload exam category image
-            if (examCatBase64Image) {
-                const examCategoryPayload = {
+        if (isValid) {
+            setLoading(true);
+            try {
+                let base64Image = image ? await getBase64(image) : null;
+                let masterCatBase64Image = masterImage
+                    ? await getBase64(masterImage)
+                    : null;
+                let examCatBase64Image = examCategoryImage
+                    ? await getBase64(examCategoryImage)
+                    : null;
+
+                const durationInSeconds = timeValue
+                    ? timeValue.hour() * 3600 + timeValue.minute() * 60
+                    : 0;
+
+                const payload = {
+                    exam_name: examName,
+                    exam_image: base64Image,
                     exam_category: selectedExamCategory,
-                    image: examCatBase64Image,
+                    master_category: selectedMasterCategory,
+                    duration: durationInSeconds,
+                    questions: questions.map((q) => ({
+                        question_title: q.question,
+                        options: q.options.map((opt) => opt.value),
+                        correct_answer: q.options[q.correctOption]?.value,
+                        question_category: "Question Category",
+                        positive_mark: q.positiveMark,
+                        negative_mark: q.negativeMark,
+                    })),
                 };
-                const examCatImageUploadResponse = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/admin/add-exam-category-image",
+
+                const accessToken = localStorage.getItem("accessToken");
+
+                // First API call - add exam
+                const response = await fetch(
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/add-exam",
                     {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                             Authorization: `Bearer ${accessToken}`,
                         },
-                        body: JSON.stringify(examCategoryPayload),
+                        body: JSON.stringify(payload),
                     }
                 );
-                const examCatData = await examCatImageUploadResponse.json();
-                if (examCatData.statuscode !== 200) {
+                const responseData = await response.json();
+                if (responseData.statuscode !== 200) {
                     message.error(
-                        "Failed to submit exam category data: " +
-                            examCatData.message
+                        "Failed to submit exam data: " + responseData.message
                     );
-                    return; // Exit if the third API call fails
+                    return; // Exit if the first API call fails
                 }
+
+                // Proceed only if the first API call was successful
+
+                // Check if the user wants to upload master category image
+                if (masterCatBase64Image) {
+                    const masterCategoryPayload = {
+                        master_category: selectedMasterCategory,
+                        image: masterCatBase64Image,
+                    };
+                    const masterCatImageUploadResponse = await fetch(
+                        "https://examappbackend-0mts.onrender.com/api/v1/app/admin/add-master-category-image",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${accessToken}`,
+                            },
+                            body: JSON.stringify(masterCategoryPayload),
+                        }
+                    );
+                    const masterCatData =
+                        await masterCatImageUploadResponse.json();
+                    if (masterCatData.statuscode !== 200) {
+                        message.error(
+                            "Failed to submit master category data: " +
+                                masterCatData.message
+                        );
+                        return; // Exit if the second API call fails
+                    }
+                }
+
+                // Check if the user wants to upload exam category image
+                if (examCatBase64Image) {
+                    const examCategoryPayload = {
+                        exam_category: selectedExamCategory,
+                        image: examCatBase64Image,
+                    };
+                    const examCatImageUploadResponse = await fetch(
+                        "https://examappbackend-0mts.onrender.com/api/v1/app/admin/add-exam-category-image",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${accessToken}`,
+                            },
+                            body: JSON.stringify(examCategoryPayload),
+                        }
+                    );
+                    const examCatData = await examCatImageUploadResponse.json();
+                    if (examCatData.statuscode !== 200) {
+                        message.error(
+                            "Failed to submit exam category data: " +
+                                examCatData.message
+                        );
+                        return; // Exit if the third API call fails
+                    }
+                }
+
+                // Success message if all API calls succeed
+                message.success("All data submitted successfully!");
+                setExamName("");
+                setImage(null);
+                setMasterImage(null);
+                setExamCategoryImage(null);
+                setQuestions([
+                    {
+                        question: "",
+                        description: "",
+                        options: [{ value: "", correct: false }],
+                        correctOption: null,
+                    },
+                ]);
+            } catch (error) {
+                console.error("Error submitting exam data:", error);
+                message.error("Error submitting exam data.");
+            } finally {
+                setLoading(false);
             }
-
-            // Success message if all API calls succeed
-            message.success("All data submitted successfully!");
-            setExamName("");
-            setImage(null);
-            setMasterImage(null);
-            setExamCategoryImage(null);
-            setQuestions([
-                {
-                    question: "",
-                    description: "",
-                    options: [{ value: "", correct: false }],
-                    correctOption: null,
-                },
-            ]);
-        } catch (error) {
-            console.error("Error submitting exam data:", error);
-            message.error("Error submitting exam data.");
-        } finally {
-            setLoading(false);
         }
-    }
-};
-
-
+    };
 
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
@@ -437,35 +437,35 @@ const handleSubmitAll = async () => {
         }
     };
 
-const handleCategorySelect = (key) => {
-    const selectedCategory = masterCategoryItems.find(
-        (item) => item.key === key
-    );
+    const handleCategorySelect = (key) => {
+        const selectedCategory = masterCategoryItems.find(
+            (item) => item.key === key
+        );
 
-    const masterCategory = selectedCategory ? selectedCategory.label : key; // Use input value as master category
+        const masterCategory = selectedCategory ? selectedCategory.label : key; // Use input value as master category
 
-    setSelectedMasterCategory(masterCategory);
+        setSelectedMasterCategory(masterCategory);
 
-    if (masterCategory) {
-        fetchExamCategories(masterCategory);
-    }
-};
+        if (masterCategory) {
+            fetchExamCategories(masterCategory);
+        }
+    };
 
-const handleExamCategorySelect = (key) => {
-    const selectedExamCategory = examCategories.find(
-        (item) => item.key === key
-    );
+    const handleExamCategorySelect = (key) => {
+        const selectedExamCategory = examCategories.find(
+            (item) => item.key === key
+        );
 
-    const examCategory = selectedExamCategory
-        ? selectedExamCategory.label
-        : key;
+        const examCategory = selectedExamCategory
+            ? selectedExamCategory.label
+            : key;
 
-    setSelectedExamCategory(examCategory);
+        setSelectedExamCategory(examCategory);
 
-    if (examCategory) {
-        fetchExamNames(examCategory);
-    }
-};
+        if (examCategory) {
+            fetchExamNames(examCategory);
+        }
+    };
     const onMenuClick = ({ key }) => {
         if (key === "2") {
             navigate("/live-test-questions");

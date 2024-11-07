@@ -10,7 +10,7 @@ import {
     message,
 } from "antd";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/logo.jpg"
+import logo from "../assets/logo.jpg";
 const { Content } = Layout;
 const { Text, Title } = Typography;
 const { useToken } = theme;
@@ -24,7 +24,7 @@ const Login = () => {
     const onFinish = async (values) => {
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/auth/user/login",
+                "https://examappbackend-0mts.onrender.com/api/v1/auth/user/login",
                 {
                     method: "POST",
                     headers: {

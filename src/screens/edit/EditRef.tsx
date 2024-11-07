@@ -51,13 +51,12 @@ const EditReference = () => {
         }
     };
 
-
     useEffect(() => {
         const fetchMasterCategories = async () => {
             const accessToken = localStorage.getItem("accessToken");
             try {
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-master-categories",
                     {
                         method: "GET",
                         headers: {
@@ -91,7 +90,7 @@ const EditReference = () => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-exam-category",
                 {
                     method: "POST",
                     headers: {
@@ -122,7 +121,7 @@ const EditReference = () => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/manipulate-materials",
                 {
                     method: "POST",
                     headers: {
@@ -203,7 +202,7 @@ const EditReference = () => {
 
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/manipulate-materials",
                 {
                     method: "POST",
                     headers: {

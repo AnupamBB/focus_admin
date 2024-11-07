@@ -48,7 +48,6 @@ const EditExamQuestion = () => {
         });
     };
 
-
     const applyMarksToAll = () => {
         const updatedQuestions = questions.map((q) => ({
             ...q,
@@ -64,7 +63,7 @@ const EditExamQuestion = () => {
             const accessToken = localStorage.getItem("accessToken");
             try {
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-master-categories",
                     {
                         method: "GET",
                         headers: {
@@ -98,7 +97,7 @@ const EditExamQuestion = () => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-exam-category",
                 {
                     method: "POST",
                     headers: {
@@ -125,38 +124,36 @@ const EditExamQuestion = () => {
         }
     };
 
-const fetchExamNames = async (examCategory) => {
-    const accessToken = localStorage.getItem("accessToken");
-    try {
-        const response = await fetch(
-            "https://examappbackend.onrender.com/api/v1/app/admin/get-all-exams-under-exam-category",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({ exam_category: examCategory }),
+    const fetchExamNames = async (examCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/app/admin/get-all-exams-under-exam-category",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({ exam_category: examCategory }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
             }
-        );
 
-        if (!response.ok) {
-            throw new Error(`Error: ${response.statusText}`);
+            const data = await response.json();
+            setExamNames(
+                data.data.map((exam) => ({
+                    label: exam.exam_name,
+                    key: exam.id,
+                }))
+            );
+        } catch (error) {
+            console.error("Error fetching exam names:", error);
         }
-
-        const data = await response.json();
-        setExamNames(
-            data.data.map((exam) => ({
-                label: exam.exam_name,
-                key: exam.id,
-            }))
-        );
-    } catch (error) {
-        console.error("Error fetching exam names:", error);
-    }
-};
-
-
+    };
 
     const handleCategorySelect = (key) => {
         const selectedCategory = masterCategoryItems.find(
@@ -172,7 +169,9 @@ const fetchExamNames = async (examCategory) => {
         }
     };
     const handleExamCategorySelect = (key) => {
-        const selectedCategory = examCategories.find((item) => item.key === key);
+        const selectedCategory = examCategories.find(
+            (item) => item.key === key
+        );
         const examCategory = selectedCategory
             ? selectedCategory.label
             : "Select exam category";
@@ -183,7 +182,6 @@ const fetchExamNames = async (examCategory) => {
         }
     };
 
-
     const handleExamMenuClick = async (examLabel) => {
         setSelectedExamName(examLabel);
         const accessToken = localStorage.getItem("accessToken");
@@ -193,7 +191,7 @@ const fetchExamNames = async (examCategory) => {
         if (selectedExam) {
             try {
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/admin/get-exam-info",
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/get-exam-info",
                     {
                         method: "POST",
                         headers: {
@@ -247,8 +245,6 @@ const fetchExamNames = async (examCategory) => {
             }
         }
     };
-
-
 
     const handleSubmitAll = async () => {
         let isValid = true;
@@ -334,9 +330,8 @@ const fetchExamNames = async (examCategory) => {
                 console.log("payload", payload);
                 const accessToken = localStorage.getItem("accessToken");
 
-                
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/admin/edit-exam",
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/edit-exam",
                     {
                         method: "PUT",
                         headers: {
@@ -346,7 +341,6 @@ const fetchExamNames = async (examCategory) => {
                         body: JSON.stringify(payload),
                     }
                 );
-
 
                 if (response.ok) {
                     message.success("All data submitted successfully!");
@@ -362,8 +356,6 @@ const fetchExamNames = async (examCategory) => {
             }
         }
     };
-
-
 
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
@@ -397,7 +389,10 @@ const fetchExamNames = async (examCategory) => {
         setQuestions(updatedQuestions);
     };
 
-    const handleCorrectOptionChange = (questionIndex: number, optionIndex: number) => {
+    const handleCorrectOptionChange = (
+        questionIndex: number,
+        optionIndex: number
+    ) => {
         const updatedQuestions = [...questions];
         updatedQuestions[questionIndex].correctOption = optionIndex;
         updatedQuestions[questionIndex].options.forEach((option, index) => {

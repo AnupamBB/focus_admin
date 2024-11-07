@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
-import { PlusOutlined} from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
-	Layout,
-	Menu,
-	Button,
-	DatePicker,
-	Form,
-	Input,
-	Upload,
-	Select,
-	Dropdown,
-	Space,
-	message,
+    Layout,
+    Menu,
+    Button,
+    DatePicker,
+    Form,
+    Input,
+    Upload,
+    Select,
+    Dropdown,
+    Space,
+    message,
 } from "antd";
 import "../styles.css";
 import TextArea from "antd/es/input/TextArea";
@@ -22,109 +22,104 @@ import dayjs from "dayjs";
 const { Header, Content, Sider } = Layout;
 
 const EditAffairs = () => {
-	const navigate = useNavigate();
-	
-	const [title, setTitle] = useState("Select a Title");
-	const [date, setDate] = useState(null);
-	const [des, setDes] = useState(null);
-	const [cat, setCat] = useState(null);     
-	const [selectedAffairId, setSelectedAffairId] = useState(null);     
+    const navigate = useNavigate();
 
+    const [title, setTitle] = useState("Select a Title");
+    const [date, setDate] = useState(null);
+    const [des, setDes] = useState(null);
+    const [cat, setCat] = useState(null);
+    const [selectedAffairId, setSelectedAffairId] = useState(null);
 
-	const [currentAffairsItems, setCurrentAffairsItems] = useState([]);
+    const [currentAffairsItems, setCurrentAffairsItems] = useState([]);
 
-	const [options, setOptions] = useState([
-		{ value: "world", label: "World" },
-		{ value: "india", label: "India" },
-		{ value: "Environment", label: "Environment" },
-		{ value: "assam", label: "Assam" },
-	]);
+    const [options, setOptions] = useState([
+        { value: "world", label: "World" },
+        { value: "india", label: "India" },
+        { value: "Environment", label: "Environment" },
+        { value: "assam", label: "Assam" },
+    ]);
 
-	const [affairs, setAffairs] = useState([
-		{
-			date_of_event: null,
-			category: "",
-			title: "",
-			description: "",
-			currentAffImg: [],
-			showInput: false,
-			newOptionValue: "",
-			selectDisabled: false,
-		},
-	]);
+    const [affairs, setAffairs] = useState([
+        {
+            date_of_event: null,
+            category: "",
+            title: "",
+            description: "",
+            currentAffImg: [],
+            showInput: false,
+            newOptionValue: "",
+            selectDisabled: false,
+        },
+    ]);
 
+    const handleFileChange = (index, { fileList }) => {
+        const updatedAffairs = [...affairs];
+        updatedAffairs[index].currentAffImg = fileList.slice(-1);
+        setAffairs(updatedAffairs);
+    };
 
-	const handleFileChange = (index, { fileList }) => {
-		const updatedAffairs = [...affairs];
-		updatedAffairs[index].currentAffImg = fileList.slice(-1);
-		setAffairs(updatedAffairs);
-	};
+    const convertToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+        });
+    };
 
-	const convertToBase64 = (file) => {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.readAsDataURL(file);
-			reader.onload = () => resolve(reader.result);
-			reader.onerror = (error) => reject(error);
-		});
-	};
+    useEffect(() => {
+        const fetchCurrentAffairs = async () => {
+            const accessToken = localStorage.getItem("accessToken");
+            try {
+                const response = await fetch(
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/current-affairs",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify({
+                            action: "get",
+                        }),
+                    }
+                );
 
-	 useEffect(() => {
-		 const fetchCurrentAffairs = async () => {
-			 const accessToken = localStorage.getItem("accessToken");
-			 try {
-				 const response = await fetch(
-					 "https://examappbackend.onrender.com/api/v1/app/admin/current-affairs",
-					 {
-						 method: "POST",
-						 headers: {
-							 "Content-Type": "application/json",
-							 Authorization: `Bearer ${accessToken}`,
-						 },
-						 body: JSON.stringify({
-							 action: "get",
-						 }),
-					 }
-				 );
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
 
-				 if (!response.ok) {
-					 throw new Error(`Error: ${response.statusText}`);
-				 }
+                const data = await response.json();
+                console.log(data);
+                const currentAffairs = data.data.currentAffairs;
 
-				 const data = await response.json();
-				 console.log(data);
-				 const currentAffairs = data.data.currentAffairs;
+                const items = currentAffairs.map((affair) => ({
+                    label: affair.title,
+                    key: affair._id,
+                    details: affair,
+                }));
 
-				 const items = currentAffairs.map((affair) => ({
-					 label: affair.title,
-					 key: affair._id,
-					 details: affair,
-				 }));
+                setCurrentAffairsItems(items);
+            } catch (error) {
+                console.error("Error fetching current affairs:", error);
+            }
+        };
 
-				 setCurrentAffairsItems(items);
-			 } catch (error) {
-				 console.error("Error fetching current affairs:", error);
-			 }
-		 };
+        fetchCurrentAffairs();
+    }, []);
 
-		 fetchCurrentAffairs();
-	 }, []);
+    const handleAffairSelect = (key) => {
+        const selected = currentAffairsItems.find((item) => item.key === key);
+        if (selected) {
+            setTitle(selected.details.title);
+            setCat(selected.details.category);
+            setDate(selected.details.date_of_event);
+            setDes(selected.details.description);
+            setSelectedAffairId(selected.details._id);
+        }
+    };
 
-	
-	const handleAffairSelect = (key) => {
-		const selected = currentAffairsItems.find((item) => item.key === key);
-		if(selected){
-			setTitle(selected.details.title);
-			setCat(selected.details.category);
-			setDate(selected.details.date_of_event);
-			setDes(selected.details.description);
-			setSelectedAffairId(selected.details._id);
-		}
-	};
-
-
-
-	const handleSubmitAll = async () => {
+    const handleSubmitAll = async () => {
         try {
             if (affairs.length === 0) {
                 message.error("No affairs to submit");
@@ -155,7 +150,7 @@ const EditAffairs = () => {
             const accessToken = localStorage.getItem("accessToken");
 
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/admin/current-affairs",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/admin/current-affairs",
                 {
                     method: "POST",
                     headers: {
@@ -189,18 +184,15 @@ const EditAffairs = () => {
         }
     };
 
+    const onMenuClick = ({ key }) => {
+        if (key === "2") navigate("/live-test-questions");
+        else if (key === "3") navigate("/question-papers");
+        else if (key === "4") navigate("/notes");
+        else if (key === "5") navigate("/references");
+        else if (key === "6") navigate("/upload-current-affairs");
+    };
 
-
-
-	const onMenuClick = ({ key }) => {
-		if (key === "2") navigate("/live-test-questions");
-		else if (key === "3") navigate("/question-papers");
-		else if (key === "4") navigate("/notes");
-		else if (key === "5") navigate("/references");
-		else if (key === "6") navigate("/upload-current-affairs");
-	};
-
-	return (
+    return (
         <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
             <Sider
                 width={200}
@@ -281,7 +273,7 @@ const EditAffairs = () => {
                                 flexDirection: "row",
                                 marginBottom: "20px",
                                 padding: "20px",
-								minWidth: "16vw"
+                                minWidth: "16vw",
                             }}
                         >
                             <Dropdown

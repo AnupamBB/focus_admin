@@ -17,7 +17,7 @@ const { Dragger } = Upload;
 const { Header, Content, Sider } = Layout;
 
 const EditNotes = () => {
-      const [fileBase64, setFileBase64] = useState("");
+    const [fileBase64, setFileBase64] = useState("");
     const navigate = useNavigate();
     const [selectedMasterCategory, setSelectedMasterCategory] = useState(
         "Select master category"
@@ -32,10 +32,9 @@ const EditNotes = () => {
         "Select exam category"
     );
 
-
     const handleExamMenuClick = (label, key) => {
         const selectedNote = examNames.find((item) => item.label === label);
-        
+
         console.log(examNames);
         if (selectedNote) {
             setMaterialTitle(selectedNote.label);
@@ -63,21 +62,19 @@ const EditNotes = () => {
 
         const reader = new FileReader();
         reader.onload = () => {
-            const base64 = reader.result.split(",")[1];
+            const base64 = reader.result;
             setFileBase64(base64);
             console.log("Base64:", base64);
         };
         reader.readAsDataURL(file);
     };
 
-
-
     useEffect(() => {
         const fetchMasterCategories = async () => {
             const accessToken = localStorage.getItem("accessToken");
             try {
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-master-categories",
                     {
                         method: "GET",
                         headers: {
@@ -111,7 +108,7 @@ const EditNotes = () => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-exam-category",
                 {
                     method: "POST",
                     headers: {
@@ -142,7 +139,7 @@ const EditNotes = () => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/manipulate-materials",
                 {
                     method: "POST",
                     headers: {
@@ -201,10 +198,10 @@ const EditNotes = () => {
         }
     };
 
-        const handleSubmitAll = async () => {
-            console.log("materialTitle     ", materialTitle);
-            console.log("base     ", fileBase64);
-        if (!materialTitle || !fileBase64 ) {
+    const handleSubmitAll = async () => {
+        console.log("materialTitle     ", materialTitle);
+        console.log("base     ", fileBase64);
+        if (!materialTitle || !fileBase64) {
             message.error("Please fill in all the fields before submitting.");
             return;
         }
@@ -223,14 +220,17 @@ const EditNotes = () => {
         console.log("payload", payload);
 
         try {
-            const response = await fetch("https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify(payload),
-            });
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/manipulate-materials",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
 
             if (response.ok) {
                 message.success("File uploaded successfully!");
@@ -257,7 +257,6 @@ const EditNotes = () => {
             navigate("/upload-current-affairs");
         }
     };
-
 
     return (
         <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>

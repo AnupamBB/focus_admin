@@ -40,7 +40,7 @@ const QuestionPapers = () => {
 
         const reader = new FileReader();
         reader.onload = () => {
-            const base64 = reader.result.split(",")[1];
+            const base64 = reader.result.split(",")[1;
             setFileBase64(base64);
             console.log("Base64:", base64);
         };
@@ -52,7 +52,7 @@ const QuestionPapers = () => {
             const accessToken = localStorage.getItem("accessToken");
             try {
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-master-categories",
                     {
                         method: "GET",
                         headers: {
@@ -86,7 +86,7 @@ const QuestionPapers = () => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-exam-category",
                 {
                     method: "POST",
                     headers: {
@@ -165,7 +165,7 @@ const QuestionPapers = () => {
 
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/manipulate-materials",
                 {
                     method: "POST",
                     headers: {

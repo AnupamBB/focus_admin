@@ -132,7 +132,7 @@ const UploadAffairs = () => {
             const accessToken = localStorage.getItem("accessToken");
 
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/admin/current-affairs",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/admin/current-affairs",
                 {
                     method: "POST",
                     headers: {
