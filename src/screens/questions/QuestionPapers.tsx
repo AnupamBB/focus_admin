@@ -40,7 +40,7 @@ const QuestionPapers = () => {
 
         const reader = new FileReader();
         reader.onload = () => {
-            const base64 = reader.result.split(",")[1;
+            const base64 = reader.result;
             setFileBase64(base64);
             console.log("Base64:", base64);
         };

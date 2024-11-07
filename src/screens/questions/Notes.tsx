@@ -52,7 +52,7 @@ const Notes = () => {
             const accessToken = localStorage.getItem("accessToken");
             try {
                 const response = await fetch(
-                    "https://examappbackend.onrender.com/api/v1/app/user/get-master-categories",
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-master-categories",
                     {
                         method: "GET",
                         headers: {
@@ -86,7 +86,7 @@ const Notes = () => {
         const accessToken = localStorage.getItem("accessToken");
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/get-exam-category",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-exam-category",
                 {
                     method: "POST",
                     headers: {
@@ -112,7 +112,6 @@ const Notes = () => {
             console.error("Error fetching exam categories:", error);
         }
     };
-
 
     const handleCategorySelect = (key) => {
         const selectedCategory = masterCategoryItems.find(
@@ -166,7 +165,7 @@ const Notes = () => {
 
         try {
             const response = await fetch(
-                "https://examappbackend.onrender.com/api/v1/app/user/manipulate-materials",
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/manipulate-materials",
                 {
                     method: "POST",
                     headers: {
