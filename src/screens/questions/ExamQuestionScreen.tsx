@@ -17,7 +17,8 @@ import {
     Card, 
     CardHeader, 
     CardTitle, 
-    CardContent
+    CardContent,
+    Modal
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
@@ -39,25 +40,44 @@ const ExamQuestionScreen = () => {
     const [examCategoryImage, setExamCategoryImage] = useState(null);
     const [timeValue, setTimeValue] = useState<Dayjs | null>(null);
     const [loading, setLoading] = useState(false);
+  
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-      if (event.target.files) {
-        setSelectedFile(event.target.files[0]);
-      }
+    const [isDocumentExtracted, setIsDocumentExtracted] = useState(false);
+    const [extractedQuestions, setExtractedQuestions] = useState([]);
+  
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0] || null;
+      setSelectedFile(file);
+      setIsDocumentExtracted(false);
     };
   
-    const handleExtractQuestions = () => {
-      // Implement logic to extract questions from the uploaded file
-      console.log('Extracting questions from:', selectedFile);
-    };
-
-    const getBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (error) => reject(error);
-        });
+  
+    const handleJsonExtraction = async () => {
+      try {
+        // todo:  Your API call to extract JSON from PDF
+        // todo:  const response = await extractJsonFromPDF(selectedFile);
+        // todo:  Simulating API call
+        Modal.success({
+            title: 'Document Extracted',
+            content: 'Your document is ready to populate'
+          });
+        } catch (error) {
+          console.error('JSON extraction failed', error);
+          Modal.error({
+            title: 'Extraction Failed',
+            content: 'Unable to extract questions'
+          });
+        }
+      };
+      const handlePopulateQuestions = () => {
+        if (isDocumentExtracted) {
+          // Logic to populate questions
+          console.log('Populating questions:', extractedQuestions);
+        }
+      };    
+  
+    const handleCloseModal = () => {
+      setIsDocumentReady(false);
     };
 
     const applyMarksToAll = () => {
@@ -604,51 +624,90 @@ const ExamQuestionScreen = () => {
                             }}
                         />
 
-                        <div style={{ 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            height: '40vh', 
-                            textAlign: 'center', 
-                            padding: '20px' }}>
-                            <h1 style={{ 
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '40vh',
+                            textAlign: 'center',
+                            padding: '20px'
+                            }}>
+                            <h1 style={{
+                                marginBottom: '20px',
+                                fontSize: '4em'
+                            }}>MCQ Extractor</h1>
+                            
+                            <p style={{ 
+                                marginBottom: '20px',
+                                fontSize: '1.2em' 
+                            }}>
+                                Upload an image or PDF file to extract multiple-choice questions.
+                            </p>
+                            
+                            <div style={{ 
                                 marginBottom: '20px', 
-                                fontSize: '4em' }}>MCQ Extractor</h1>
-                            <p style={{ marginBottom: '20px', 
-                                fontSize: '1.2em' }}>Upload an image or PDF file to extract multiple-choice questions.</p>
-                            <div style={{ marginBottom: '20px', position: 'relative', display: 'inline-block' }}>
+                                position: 'relative', 
+                                display: 'inline-block' 
+                            }}>
                                 <input
-                                    type="file"
-                                    onChange={(e) => setSelectedFile(e.target.files[0])}
-                                    style={{ display: 'none' }}
-                                    id="fileInput"
+                                type="file"
+                                onChange={handleFileChange}
+                                style={{ display: 'none' }}
+                                id="fileInput"
                                 />
                                 <label
-                                    htmlFor="fileInput"
-                                    style={{
-                                        backgroundColor: '#007bff',
-                                        color: 'white',
-                                        padding: '10px 20px',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        fontSize: '1em'
-                                    }}
+                                htmlFor="fileInput"
+                                style={{
+                                    backgroundColor: selectedFile ? 'black' : '#007bff',
+                                    color: 'white',
+                                    padding: '10px 20px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '1em'
+                                }}
                                 >
-                                    Browse Files
+                                Browse Files
                                 </label>
+                                
                                 {selectedFile && (
-                                    <p style={{ marginTop: '10px', fontSize: '1em', color: '#333' }}>{selectedFile.name}</p>
+                                <p style={{ 
+                                    marginTop: '10px', 
+                                    fontSize: '1em', 
+                                    color: '#333' 
+                                }}>
+                                    {selectedFile.name}
+                                </p>
                                 )}
                             </div>
+                            
                             <Button
-                                style={{ marginTop: '24px', padding: '10px 20px', fontSize: '1em' }}
+                                style={{ 
+                                marginTop: '24px', 
+                                padding: '10px 20px', 
+                                fontSize: '1em',
+                                marginRight: '10px'
+                                }}
                                 type="primary"
-                                onClick={handleJsonSubmit}
+                                onClick={handleJsonExtraction}
+                                disabled={!selectedFile}
+                            >
+                                Extract Questions
+                            </Button>
+
+                            <Button
+                                style={{ 
+                                marginTop: '24px', 
+                                padding: '10px 20px', 
+                                fontSize: '1em'
+                                }}
+                                type="primary"
+                                onClick={handlePopulateQuestions}
+                                disabled={!isDocumentExtracted}
                             >
                                 Populate Questions
                             </Button>
-                        </div>
+                            </div>
 
 
                         <div
