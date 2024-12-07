@@ -17,6 +17,8 @@ import {
 } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 const { Header, Content, Sider } = Layout;
 
@@ -1026,17 +1028,20 @@ const ExamQuestionScreen = () => {
                                                     width: "100%",
                                                 }}
                                             >
-                                                <Input
-                                                    placeholder="Your question goes here..."
+                                                <ReactQuill
                                                     value={question.question}
-                                                    onChange={(e) =>
+                                                    onChange={(value) =>
                                                         handleQuestionChange(
                                                             questionIndex,
                                                             "question",
-                                                            e.target.value
+                                                            value
                                                         )
                                                     }
-                                                    style={{ width: "300px" }}
+                                                    style={{
+                                                        width: "300px",
+                                                        marginBottom: "80px",
+                                                    }}
+                                                    placeholder="Your question goes here..."
                                                 />
                                                 <Button
                                                     type="primary"
