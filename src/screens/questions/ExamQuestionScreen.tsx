@@ -14,13 +14,8 @@ import {
     Upload,
     TimePicker,
     Spin,
-    Card, 
-    CardHeader, 
-    CardTitle, 
-    CardContent,
-    Modal
+    Modal,
 } from "antd";
-import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
 
 const { Header, Content, Sider } = Layout;
@@ -40,44 +35,112 @@ const ExamQuestionScreen = () => {
     const [examCategoryImage, setExamCategoryImage] = useState(null);
     const [timeValue, setTimeValue] = useState<Dayjs | null>(null);
     const [loading, setLoading] = useState(false);
-  
+
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isDocumentExtracted, setIsDocumentExtracted] = useState(false);
     const [extractedQuestions, setExtractedQuestions] = useState([]);
-  
+    const [jsonInput, setJsonInput] = useState("");
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0] || null;
-      setSelectedFile(file);
-      setIsDocumentExtracted(false);
+        const file = e.target.files?.[0] || null;
+        setSelectedFile(file);
+        setIsDocumentExtracted(false);
     };
-  
-  
+
     const handleJsonExtraction = async () => {
-      try {
-        // todo:  Your API call to extract JSON from PDF
-        // todo:  const response = await extractJsonFromPDF(selectedFile);
-        // todo:  Simulating API call
-        Modal.success({
-            title: 'Document Extracted',
-            content: 'Your document is ready to populate'
-          });
+        if (!selectedFile) {
+            message.error("Please select a file before extraction.");
+            return;
+        }
+
+        try {
+            const accessToken = localStorage.getItem("accessToken");
+            setLoading(true);
+            const fileToBase64 = (file: File): Promise<string> =>
+                new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => {
+                        const base64String = (reader.result as string).replace(
+                            /^data:(.*?);base64,/,
+                            ""
+                        );
+                        resolve(base64String);
+                    };
+                    reader.onerror = (error) => reject(error);
+                });
+
+            const base64File = await fileToBase64(selectedFile);
+
+            const payload = { base64: base64File };
+            console.log("=============", payload);
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/extract_questions",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.statuscode === 200) {
+                setJsonInput(JSON.stringify(data.questions || []));
+                setExtractedQuestions(data.questions || []);
+                setIsDocumentExtracted(true);
+                Modal.success({
+                    title: "Document Extracted",
+                    content: "Your document has been successfully extracted.",
+                });
+            } else {
+                throw new Error(data.message || "Failed to extract questions.");
+            }
         } catch (error) {
-          console.error('JSON extraction failed', error);
-          Modal.error({
-            title: 'Extraction Failed',
-            content: 'Unable to extract questions'
-          });
+            console.error("JSON extraction failed", error);
+            Modal.error({
+                title: "Extraction Failed",
+                content:
+                    error instanceof Error
+                        ? error.message
+                        : "Unable to extract questions.",
+            });
+        } finally {
+            setLoading(false);
         }
-      };
-      const handlePopulateQuestions = () => {
-        if (isDocumentExtracted) {
-          // Logic to populate questions
-          console.log('Populating questions:', extractedQuestions);
+    };
+
+    const handlePopulateQuestions = () => {
+        if (!isDocumentExtracted) {
+            message.error("No extracted data available to populate questions.");
+            return;
         }
-      };    
-  
-    const handleCloseModal = () => {
-      setIsDocumentReady(false);
+
+        try {
+            const parsedQuestions = JSON.parse(jsonInput);
+
+            const formattedQuestions = parsedQuestions.map((q: any) => ({
+                question: q.question,
+                description: q.description || "",
+                options: q.options.map((option: string) => ({
+                    value: option,
+                    correct: false,
+                })),
+                correctOption: null,
+            }));
+
+            setExtractedQuestions(formattedQuestions);
+            message.success("Questions populated successfully");
+        } catch (error) {
+            message.error("Invalid JSON format");
+        }
     };
 
     const applyMarksToAll = () => {
@@ -160,7 +223,6 @@ const ExamQuestionScreen = () => {
     const handleSubmitAll = async () => {
         let isValid = true;
 
-        // Validation checks
         if (!examName.trim()) {
             message.error("Please provide an exam name.");
             isValid = false;
@@ -242,7 +304,6 @@ const ExamQuestionScreen = () => {
 
                 const accessToken = localStorage.getItem("accessToken");
 
-                // First API call - add exam
                 const response = await fetch(
                     "https://examappbackend-0mts.onrender.com/api/v1/app/admin/add-exam",
                     {
@@ -259,12 +320,9 @@ const ExamQuestionScreen = () => {
                     message.error(
                         "Failed to submit exam data: " + responseData.message
                     );
-                    return; // Exit if the first API call fails
+                    return;
                 }
 
-                // Proceed only if the first API call was successful
-
-                // Check if the user wants to upload master category image
                 if (masterCatBase64Image) {
                     const masterCategoryPayload = {
                         master_category: selectedMasterCategory,
@@ -288,11 +346,10 @@ const ExamQuestionScreen = () => {
                             "Failed to submit master category data: " +
                                 masterCatData.message
                         );
-                        return; // Exit if the second API call fails
+                        return;
                     }
                 }
 
-                // Check if the user wants to upload exam category image
                 if (examCatBase64Image) {
                     const examCategoryPayload = {
                         exam_category: selectedExamCategory,
@@ -315,11 +372,10 @@ const ExamQuestionScreen = () => {
                             "Failed to submit exam category data: " +
                                 examCatData.message
                         );
-                        return; // Exit if the third API call fails
+                        return;
                     }
                 }
 
-                // Success message if all API calls succeed
                 message.success("All data submitted successfully!");
                 setExamName("");
                 setImage(null);
@@ -353,27 +409,6 @@ const ExamQuestionScreen = () => {
             correctOption: null,
         },
     ]);
-    const [jsonInput, setJsonInput] = useState("");
-    const handleJsonSubmit = () => {
-        try {
-            const parsedQuestions = JSON.parse(jsonInput);
-
-            const formattedQuestions = parsedQuestions.map((q) => ({
-                question: q.question,
-                description: q.description || "",
-                options: q.options.map((option) => ({
-                    value: option,
-                    correct: false,
-                })),
-                correctOption: null,
-            }));
-
-            setQuestions(formattedQuestions);
-            message.success("Questions populated successfully");
-        } catch (error) {
-            message.error("Invalid JSON format");
-        }
-    };
 
     const handleQuestionChange = (index, field, value) => {
         const updatedQuestions = [...questions];
@@ -477,7 +512,7 @@ const ExamQuestionScreen = () => {
             (item) => item.key === key
         );
 
-        const masterCategory = selectedCategory ? selectedCategory.label : key; // Use input value as master category
+        const masterCategory = selectedCategory ? selectedCategory.label : key;
 
         setSelectedMasterCategory(masterCategory);
 
@@ -624,69 +659,84 @@ const ExamQuestionScreen = () => {
                             }}
                         />
 
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '40vh',
-                            textAlign: 'center',
-                            padding: '20px'
-                            }}>
-                            <h1 style={{
-                                marginBottom: '20px',
-                                fontSize: '4em'
-                            }}>MCQ Extractor</h1>
-                            
-                            <p style={{ 
-                                marginBottom: '20px',
-                                fontSize: '1.2em' 
-                            }}>
-                                Upload an image or PDF file to extract multiple-choice questions.
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                height: "40vh",
+                                textAlign: "center",
+                                padding: "20px",
+                            }}
+                        >
+                            <h1
+                                style={{
+                                    marginBottom: "20px",
+                                    fontSize: "4em",
+                                }}
+                            >
+                                MCQ Extractor
+                            </h1>
+
+                            <p
+                                style={{
+                                    marginBottom: "20px",
+                                    fontSize: "1.2em",
+                                }}
+                            >
+                                Upload an image or PDF file to extract
+                                multiple-choice questions.
                             </p>
-                            
-                            <div style={{ 
-                                marginBottom: '20px', 
-                                position: 'relative', 
-                                display: 'inline-block' 
-                            }}>
+
+                            <div
+                                style={{
+                                    marginBottom: "20px",
+                                    position: "relative",
+                                    display: "inline-block",
+                                }}
+                            >
                                 <input
-                                type="file"
-                                onChange={handleFileChange}
-                                style={{ display: 'none' }}
-                                id="fileInput"
+                                    type="file"
+                                    onChange={handleFileChange}
+                                    style={{ display: "none" }}
+                                    id="fileInput"
                                 />
                                 <label
-                                htmlFor="fileInput"
-                                style={{
-                                    backgroundColor: selectedFile ? 'black' : '#007bff',
-                                    color: 'white',
-                                    padding: '10px 20px',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '1em'
-                                }}
+                                    htmlFor="fileInput"
+                                    style={{
+                                        backgroundColor: selectedFile
+                                            ? "black"
+                                            : "#007bff",
+                                        color: "white",
+                                        padding: "10px 20px",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        fontSize: "1em",
+                                    }}
                                 >
-                                Browse Files
+                                    Browse Files
                                 </label>
-                                
+
                                 {selectedFile && (
-                                <p style={{ 
-                                    marginTop: '10px', 
-                                    fontSize: '1em', 
-                                    color: '#333' 
-                                }}>
-                                    {selectedFile.name}
-                                </p>
+                                    <p
+                                        style={{
+                                            marginTop: "10px",
+                                            fontSize: "1em",
+                                            color: "#333",
+                                        }}
+                                    >
+                                        {selectedFile.name}
+                                    </p>
                                 )}
                             </div>
-                            
+
                             <Button
-                                style={{ 
-                                marginTop: '24px', 
-                                padding: '10px 20px', 
-                                fontSize: '1em',
-                                marginRight: '10px'
+                                style={{
+                                    marginTop: "24px",
+                                    padding: "10px 20px",
+                                    fontSize: "1em",
+                                    marginRight: "10px",
                                 }}
                                 type="primary"
                                 onClick={handleJsonExtraction}
@@ -696,10 +746,10 @@ const ExamQuestionScreen = () => {
                             </Button>
 
                             <Button
-                                style={{ 
-                                marginTop: '24px', 
-                                padding: '10px 20px', 
-                                fontSize: '1em'
+                                style={{
+                                    marginTop: "24px",
+                                    padding: "10px 20px",
+                                    fontSize: "1em",
                                 }}
                                 type="primary"
                                 onClick={handlePopulateQuestions}
@@ -707,8 +757,7 @@ const ExamQuestionScreen = () => {
                             >
                                 Populate Questions
                             </Button>
-                            </div>
-
+                        </div>
 
                         <div
                             style={{
