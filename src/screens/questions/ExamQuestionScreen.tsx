@@ -20,8 +20,9 @@ import {
     CardContent,
     Modal
 } from "antd";
-import TextArea from "antd/es/input/TextArea";
 import "../styles.css";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css"; 
 
 const { Header, Content, Sider } = Layout;
 
@@ -624,69 +625,84 @@ const ExamQuestionScreen = () => {
                             }}
                         />
 
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '40vh',
-                            textAlign: 'center',
-                            padding: '20px'
-                            }}>
-                            <h1 style={{
-                                marginBottom: '20px',
-                                fontSize: '4em'
-                            }}>MCQ Extractor</h1>
-                            
-                            <p style={{ 
-                                marginBottom: '20px',
-                                fontSize: '1.2em' 
-                            }}>
-                                Upload an image or PDF file to extract multiple-choice questions.
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                height: "40vh",
+                                textAlign: "center",
+                                padding: "20px",
+                            }}
+                        >
+                            <h1
+                                style={{
+                                    marginBottom: "20px",
+                                    fontSize: "4em",
+                                }}
+                            >
+                                MCQ Extractor
+                            </h1>
+
+                            <p
+                                style={{
+                                    marginBottom: "20px",
+                                    fontSize: "1.2em",
+                                }}
+                            >
+                                Upload an image or PDF file to extract
+                                multiple-choice questions.
                             </p>
-                            
-                            <div style={{ 
-                                marginBottom: '20px', 
-                                position: 'relative', 
-                                display: 'inline-block' 
-                            }}>
+
+                            <div
+                                style={{
+                                    marginBottom: "20px",
+                                    position: "relative",
+                                    display: "inline-block",
+                                }}
+                            >
                                 <input
-                                type="file"
-                                onChange={handleFileChange}
-                                style={{ display: 'none' }}
-                                id="fileInput"
+                                    type="file"
+                                    onChange={handleFileChange}
+                                    style={{ display: "none" }}
+                                    id="fileInput"
                                 />
                                 <label
-                                htmlFor="fileInput"
-                                style={{
-                                    backgroundColor: selectedFile ? 'black' : '#007bff',
-                                    color: 'white',
-                                    padding: '10px 20px',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '1em'
-                                }}
+                                    htmlFor="fileInput"
+                                    style={{
+                                        backgroundColor: selectedFile
+                                            ? "black"
+                                            : "#007bff",
+                                        color: "white",
+                                        padding: "10px 20px",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        fontSize: "1em",
+                                    }}
                                 >
-                                Browse Files
+                                    Browse Files
                                 </label>
-                                
+
                                 {selectedFile && (
-                                <p style={{ 
-                                    marginTop: '10px', 
-                                    fontSize: '1em', 
-                                    color: '#333' 
-                                }}>
-                                    {selectedFile.name}
-                                </p>
+                                    <p
+                                        style={{
+                                            marginTop: "10px",
+                                            fontSize: "1em",
+                                            color: "#333",
+                                        }}
+                                    >
+                                        {selectedFile.name}
+                                    </p>
                                 )}
                             </div>
-                            
+
                             <Button
-                                style={{ 
-                                marginTop: '24px', 
-                                padding: '10px 20px', 
-                                fontSize: '1em',
-                                marginRight: '10px'
+                                style={{
+                                    marginTop: "24px",
+                                    padding: "10px 20px",
+                                    fontSize: "1em",
+                                    marginRight: "10px",
                                 }}
                                 type="primary"
                                 onClick={handleJsonExtraction}
@@ -696,10 +712,10 @@ const ExamQuestionScreen = () => {
                             </Button>
 
                             <Button
-                                style={{ 
-                                marginTop: '24px', 
-                                padding: '10px 20px', 
-                                fontSize: '1em'
+                                style={{
+                                    marginTop: "24px",
+                                    padding: "10px 20px",
+                                    fontSize: "1em",
                                 }}
                                 type="primary"
                                 onClick={handlePopulateQuestions}
@@ -707,8 +723,7 @@ const ExamQuestionScreen = () => {
                             >
                                 Populate Questions
                             </Button>
-                            </div>
-
+                        </div>
 
                         <div
                             style={{
@@ -1094,17 +1109,17 @@ const ExamQuestionScreen = () => {
                                                     width: "100%",
                                                 }}
                                             >
-                                                <Input
-                                                    placeholder="Your question goes here..."
+                                                <ReactQuill
                                                     value={question.question}
-                                                    onChange={(e) =>
+                                                    onChange={(value) =>
                                                         handleQuestionChange(
                                                             questionIndex,
                                                             "question",
-                                                            e.target.value
+                                                            value
                                                         )
                                                     }
-                                                    style={{ width: "300px" }}
+                                                    style={{ width: "300px", marginBottom: "80px" }}
+                                                    placeholder="Your question goes here..."
                                                 />
                                                 <Button
                                                     type="primary"
