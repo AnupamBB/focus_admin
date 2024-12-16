@@ -29,6 +29,7 @@ const ExamQuestionScreen = () => {
         "Select master category"
     );
     const [examCategories, setExamCategories] = useState([]);
+    const [examSubject, setExamSubject] = useState([]);
     const [examName, setExamName] = useState("");
     const [globalPositiveMark, setGlobalPositiveMark] = useState();
     const [globalNegativeMark, setGlobalNegativeMark] = useState();
@@ -123,6 +124,39 @@ const ExamQuestionScreen = () => {
             console.error("Error fetching exam categories:", error);
         }
     };
+    const fetchExamSubject = async (examCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/app/admin/get-subjects",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({
+                        exam_category: examCategory,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            // Corrected map function
+            const subjects = data.data.response.map((exam) => ({
+                label: exam.subject_name,
+                key: exam.subject_name,
+            }));
+
+            setExamSubject(subjects);
+        } catch (error) {
+            console.error("Error fetching exam categories:", error);
+        }
+    };
 
     const handleSubmitAll = async () => {
         let isValid = true;
@@ -195,6 +229,7 @@ const ExamQuestionScreen = () => {
                     exam_name: examName,
                     exam_image: base64Image,
                     exam_category: selectedExamCategory,
+                    subject_name: selectedExamSubject,
                     master_category: selectedMasterCategory,
                     duration: durationInSeconds,
                     questions: questions.map((q) => ({
@@ -312,6 +347,7 @@ const ExamQuestionScreen = () => {
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
     );
+    const [selectedExamSubject, setSelectedExamSubject] = useState(null);
     const [questions, setQuestions] = useState([
         {
             question: "",
@@ -444,7 +480,7 @@ const ExamQuestionScreen = () => {
             (item) => item.key === key
         );
 
-        const masterCategory = selectedCategory ? selectedCategory.label : key; // Use input value as master category
+        const masterCategory = selectedCategory ? selectedCategory.label : key;
 
         setSelectedMasterCategory(masterCategory);
 
@@ -463,6 +499,21 @@ const ExamQuestionScreen = () => {
             : key;
 
         setSelectedExamCategory(examCategory);
+
+        if (examCategory) {
+            fetchExamSubject(examCategory);
+        }
+    };
+    const handleExamSubjectSelect = (key) => {
+        const selectedExamSubject = examSubject.find(
+            (item) => item.key === key
+        );
+
+        const examCategory = selectedExamSubject
+            ? selectedExamSubject.label
+            : key;
+
+        setSelectedExamSubject(examCategory);
 
         if (examCategory) {
             fetchExamNames(examCategory);
@@ -806,6 +857,69 @@ const ExamQuestionScreen = () => {
                                                         }}
                                                         onPressEnter={(e) =>
                                                             handleExamCategorySelect(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div
+                                                style={{
+                                                    margin: "10px",
+                                                }}
+                                            >
+                                                <Dropdown
+                                                    menu={{
+                                                        items: examSubject.map(
+                                                            (item) => ({
+                                                                key: item.key,
+                                                                label: (
+                                                                    <a
+                                                                        onClick={() =>
+                                                                            handleExamSubjectSelect(
+                                                                                item.key
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            item.label
+                                                                        }
+                                                                    </a>
+                                                                ),
+                                                            })
+                                                        ),
+                                                    }}
+                                                    trigger={["click"]}
+                                                >
+                                                    <a
+                                                        onClick={(e) =>
+                                                            e.preventDefault()
+                                                        }
+                                                    >
+                                                        <Space>
+                                                            <Button>
+                                                                {selectedExamSubject ||
+                                                                    "Select Subject"}
+                                                                <DownOutlined />
+                                                            </Button>
+                                                        </Space>
+                                                    </a>
+                                                </Dropdown>
+
+                                                <div>
+                                                    <Input
+                                                        placeholder="Enter Subjects"
+                                                        onChange={(e) =>
+                                                            handleExamSubjectSelect(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        style={{
+                                                            width: "300px",
+                                                            marginTop: "10px",
+                                                        }}
+                                                        onPressEnter={(e) =>
+                                                            handleExamSubjectSelect(
                                                                 e.target.value
                                                             )
                                                         }
