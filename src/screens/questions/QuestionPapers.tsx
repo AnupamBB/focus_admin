@@ -24,10 +24,13 @@ const QuestionPapers = () => {
     );
     const [masterCategoryItems, setMasterCategoryItems] = useState([]);
     const [examCategories, setExamCategories] = useState([]);
+    const [examSubject, setExamSubject] = useState([]);
     const [materialTitle, setMaterialTitle] = useState("");
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
     );
+    const [selectedExamSubject, setSelectedExamSubject] =
+        useState("Select subject");
 
     const handleFileChange = (info) => {
         const file = info.file;
@@ -113,6 +116,38 @@ const QuestionPapers = () => {
         }
     };
 
+    const fetchExamSubject = async (examCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/app/admin/get-subjects",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({ exam_category: examCategory }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            const subjects = data.data.response.map((exam) => ({
+                label: exam.subject_name,
+                key: exam.subject_name,
+            }));
+
+            setExamSubject(subjects);
+        } catch (error) {
+            console.error("Error fetching exam categories:", error);
+        }
+    };
+
     const handleCategorySelect = (key) => {
         const selectedCategory = masterCategoryItems.find(
             (item) => item.key === key
@@ -137,13 +172,18 @@ const QuestionPapers = () => {
         setSelectedExamCategory(examCategory);
 
         if (examCategory !== "Select exam category") {
-            fetchStudyMaterials(examCategory);
+            fetchExamSubject(examCategory);
         }
+    };
+    const handleExamSubjectSelect = (key) => {
+        const selectedSubject = examSubject.find((item) => item.key === key);
+        const subject = selectedSubject
+            ? selectedSubject.label
+            : "Select subject";
+        setSelectedExamSubject(subject);
     };
 
     const handleSubmitAll = async () => {
-        console.log("materialTitle     ", materialTitle);
-        console.log("base     ", fileBase64);
         if (!materialTitle || !fileBase64) {
             message.error("Please fill in all the fields before submitting.");
             return;
@@ -153,6 +193,10 @@ const QuestionPapers = () => {
         const payload = {
             action: "create",
             exam_category: selectedExamCategory,
+            subject_name:
+                selectedExamSubject !== "Select subject"
+                    ? selectedExamSubject
+                    : null,
             material_type: "pyqs",
             material_data: [
                 {
@@ -405,6 +449,51 @@ const QuestionPapers = () => {
                                                         >
                                                             {
                                                                 selectedExamCategory
+                                                            }
+                                                            <DownOutlined />
+                                                        </Button>
+                                                    </Space>
+                                                </a>
+                                            </Dropdown>
+                                            <Dropdown
+                                                menu={{
+                                                    items: examSubject.map(
+                                                        (item) => ({
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleExamSubjectSelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
+                                                        })
+                                                    ),
+                                                }}
+                                                trigger={["click"]}
+                                                disabled={
+                                                    selectedExamCategory ===
+                                                    "Select exam category"
+                                                }
+                                            >
+                                                <a
+                                                    onClick={(e) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    <Space>
+                                                        <Button
+                                                            disabled={
+                                                                selectedExamCategory ===
+                                                                "Select exam category"
+                                                            }
+                                                        >
+                                                            {
+                                                                selectedExamSubject
                                                             }
                                                             <DownOutlined />
                                                         </Button>
