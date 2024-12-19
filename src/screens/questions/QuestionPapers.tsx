@@ -175,6 +175,7 @@ const QuestionPapers = () => {
             fetchExamSubject(examCategory);
         }
     };
+
     const handleExamSubjectSelect = (key) => {
         const selectedSubject = examSubject.find((item) => item.key === key);
         const subject = selectedSubject

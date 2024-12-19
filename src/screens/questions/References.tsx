@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { InboxOutlined, DownOutlined } from "@ant-design/icons";
+import { DownOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
     Layout,
@@ -10,7 +10,6 @@ import {
     message,
     Dropdown,
     Space,
-    Upload,
 } from "antd";
 import "../styles.css";
 const { Header, Content, Sider } = Layout;
@@ -22,12 +21,14 @@ const References = () => {
     );
     const [masterCategoryItems, setMasterCategoryItems] = useState([]);
     const [examCategories, setExamCategories] = useState([]);
-    const [examNames, setExamNames] = useState([]);
+    const [examSubject, setExamSubject] = useState([]);
     const [materialTitle, setMaterialTitle] = useState("");
     const [materialLink, setMaterialLink] = useState("");
     const [selectedExamCategory, setSelectedExamCategory] = useState(
         "Select exam category"
     );
+    const [selectedExamSubject, setSelectedExamSubject] =
+        useState("Select subject");
 
     useEffect(() => {
         const fetchMasterCategories = async () => {
@@ -95,6 +96,38 @@ const References = () => {
         }
     };
 
+    const fetchExamSubject = async (examCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/app/admin/get-subjects",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({ exam_category: examCategory }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            const subjects = data.data.response.map((exam) => ({
+                label: exam.subject_name,
+                key: exam.subject_name,
+            }));
+
+            setExamSubject(subjects);
+        } catch (error) {
+            console.error("Error fetching exam categories:", error);
+        }
+    };
+
     const handleCategorySelect = (key) => {
         const selectedCategory = masterCategoryItems.find(
             (item) => item.key === key
@@ -119,10 +152,17 @@ const References = () => {
         setSelectedExamCategory(examCategory);
 
         if (examCategory !== "Select exam category") {
-            fetchQuestionPaper(examCategory);
+            fetchExamSubject(examCategory);
         }
     };
 
+    const handleExamSubjectSelect = (key) => {
+        const selectedSubject = examSubject.find((item) => item.key === key);
+        const subject = selectedSubject
+            ? selectedSubject.label
+            : "Select subject";
+        setSelectedExamSubject(subject);
+    };
     const handleSubmitAll = async () => {
         if (!materialTitle || !materialLink) {
             message.error("Please fill in all the fields before submitting.");
@@ -133,6 +173,10 @@ const References = () => {
         const payload = {
             action: "create",
             exam_category: selectedExamCategory,
+            subject_name:
+                selectedExamSubject !== "Select subject"
+                    ? selectedExamSubject
+                    : null,
             material_type: "ref_books",
             material_data: [
                 {
@@ -384,6 +428,51 @@ const References = () => {
                                                         >
                                                             {
                                                                 selectedExamCategory
+                                                            }
+                                                            <DownOutlined />
+                                                        </Button>
+                                                    </Space>
+                                                </a>
+                                            </Dropdown>
+                                            <Dropdown
+                                                menu={{
+                                                    items: examSubject.map(
+                                                        (item) => ({
+                                                            key: item.key,
+                                                            label: (
+                                                                <a
+                                                                    onClick={() =>
+                                                                        handleExamSubjectSelect(
+                                                                            item.key
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </a>
+                                                            ),
+                                                        })
+                                                    ),
+                                                }}
+                                                trigger={["click"]}
+                                                disabled={
+                                                    selectedExamCategory ===
+                                                    "Select exam category"
+                                                }
+                                            >
+                                                <a
+                                                    onClick={(e) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    <Space>
+                                                        <Button
+                                                            disabled={
+                                                                selectedExamCategory ===
+                                                                "Select exam category"
+                                                            }
+                                                        >
+                                                            {
+                                                                selectedExamSubject
                                                             }
                                                             <DownOutlined />
                                                         </Button>
