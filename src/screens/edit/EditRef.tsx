@@ -108,8 +108,9 @@ const EditReference = () => {
             const data = await response.json();
             setExamCategories(
                 data.data.examCategories.map((category) => ({
-                    label: category,
-                    key: category,
+                    label: category.exam_category,
+                    key: category.exam_category,
+                    image: category.exam_category_image,
                 }))
             );
         } catch (error) {
@@ -293,7 +294,7 @@ const EditReference = () => {
                                 padding: "24px 24px 0",
                             }}
                         >
-                            Live Test Section
+                            Edit References Section
                         </div>
                         <hr
                             style={{

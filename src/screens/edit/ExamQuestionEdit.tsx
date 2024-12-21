@@ -15,6 +15,8 @@ import {
     TimePicker,
 } from "antd";
 import "../styles.css";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 const { Header, Content, Sider } = Layout;
 
@@ -115,8 +117,9 @@ const EditExamQuestion = () => {
             const data = await response.json();
             setExamCategories(
                 data.data.examCategories.map((category) => ({
-                    label: category,
-                    key: category,
+                    label: category.exam_category,
+                    key: category.exam_category,
+                    image: category.exam_category_image,
                 }))
             );
         } catch (error) {
@@ -821,14 +824,14 @@ const EditExamQuestion = () => {
                                                     width: "100%",
                                                 }}
                                             >
-                                                <Input
+                                                <ReactQuill
                                                     placeholder="Your question goes here..."
                                                     value={question.question}
-                                                    onChange={(e) =>
+                                                    onChange={(value) =>
                                                         handleQuestionChange(
                                                             questionIndex,
                                                             "question",
-                                                            e.target.value
+                                                            value
                                                         )
                                                     }
                                                     style={{ width: "300px" }}

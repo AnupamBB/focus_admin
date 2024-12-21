@@ -116,8 +116,9 @@ const ExamQuestionScreen = () => {
             const data = await response.json();
             setExamCategories(
                 data.data.examCategories.map((category) => ({
-                    label: category,
-                    key: category,
+                    label: category.exam_category,
+                    key: category.exam_category,
+                    image: category.exam_category_image,
                 }))
             );
         } catch (error) {
