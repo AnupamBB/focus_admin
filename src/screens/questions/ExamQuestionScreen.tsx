@@ -239,7 +239,10 @@ const ExamQuestionScreen = () => {
                         correct_answer: q.options[q.correctOption]?.value,
                         question_category: "Question Category",
                         positive_mark: q.positiveMark,
-                        negative_mark: q.negativeMark,
+                        negative_mark:
+                            q.negativeMark < 0
+                                ? q.negativeMark * -1
+                                : q.negativeMark,
                     })),
                 };
 
