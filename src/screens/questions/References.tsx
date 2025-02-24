@@ -224,7 +224,7 @@ const References = () => {
             navigate("/references");
         } else if (key === "6") {
             navigate("/upload-current-affairs");
-        }
+        } else if (key === "7") navigate("/EditExamCategories");
     };
 
     return (
@@ -250,6 +250,7 @@ const References = () => {
                         <Menu.Item key="5">References</Menu.Item>
                     </Menu.SubMenu>
                     <Menu.Item key="6">Current Affairs</Menu.Item>
+                    <Menu.Item key="7">Edit Categories</Menu.Item>
                 </Menu>
             </Sider>
             <Layout>

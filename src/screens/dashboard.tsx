@@ -1,20 +1,12 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-    DownOutlined,
-    UploadOutlined,
-    UserOutlined,
-    VideoCameraOutlined,
-} from "@ant-design/icons";
+import { DownOutlined, UserOutlined } from "@ant-design/icons";
 import {
     Layout,
     Menu,
     theme,
-    Typography,
     Grid,
     Button,
-    Col,
-    Row,
     MenuProps,
     message,
     Dropdown,
@@ -23,7 +15,6 @@ import {
 import "./styles.css";
 
 const { Header, Content, Sider } = Layout;
-const { Title } = Typography;
 const { useToken } = theme;
 const { useBreakpoint } = Grid;
 
@@ -147,7 +138,7 @@ const Dashboard = () => {
             navigate("/references");
         } else if (key === "6") {
             navigate("/upload-current-affairs");
-        }
+        } else if (key === "7") navigate("/EditExamCategories");
     };
     return (
         <Layout style={{ minHeight: "100vh", minWidth: "100vw" }}>
@@ -173,6 +164,7 @@ const Dashboard = () => {
                         <Menu.Item key="5">References</Menu.Item>
                     </Menu.SubMenu>
                     <Menu.Item key="6">Current Affairs</Menu.Item>
+                    <Menu.Item key="7">Edit Categories</Menu.Item>
                 </Menu>
             </Sider>
             <Layout>
