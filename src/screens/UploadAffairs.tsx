@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useState, useEffect } from "react";
+import { PlusOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
     Layout,
@@ -19,12 +19,7 @@ const { Header, Content, Sider } = Layout;
 
 const UploadAffairs = () => {
     const navigate = useNavigate();
-    const [options, setOptions] = useState([
-        { value: "world", label: "World" },
-        { value: "india", label: "India" },
-        { value: "Environment", label: "Environment" },
-        { value: "assam", label: "Assam" },
-    ]);
+    const [options, setOptions] = useState([]);
 
     const [affairs, setAffairs] = useState([
         {
@@ -100,6 +95,46 @@ const UploadAffairs = () => {
             reader.onerror = (error) => reject(error);
         });
     };
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            const accessToken = localStorage.getItem("accessToken");
+
+            try {
+                const response = await fetch(
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/get-current-affairs-categories",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                    }
+                );
+
+                const result = await response.json();
+
+                if (result.statuscode === 200 && result.data?.categories) {
+                    const formattedOptions = result.data.categories.map(
+                        (category) => ({
+                            value: category.toLowerCase(),
+                            label:
+                                category.charAt(0).toUpperCase() +
+                                category.slice(1),
+                        })
+                    );
+
+                    setOptions(formattedOptions);
+                } else {
+                    console.error("Invalid response structure:", result);
+                }
+            } catch (error) {
+                console.error("Error fetching options:", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
 
     const handleSubmitAll = async () => {
         const affairsToSubmit = [];
