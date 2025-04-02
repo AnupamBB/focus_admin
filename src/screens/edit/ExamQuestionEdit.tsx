@@ -28,9 +28,10 @@ const EditExamQuestion = () => {
     const [masterCategoryItems, setMasterCategoryItems] = useState([]);
 
     const [examCategories, setExamCategories] = useState([]);
-    const [examNames, setExamNames] = useState([]);
+    const [subjectExamNames, setSubjecExamNames] = useState([]);
+    const [combinedExamNames, setCombinedSubjecExamNames] = useState([]);
     const [selectedExamName, setSelectedExamName] =
-        useState("Select exam name");
+        useState("Select Exam Name");
     const [globalPositiveMark, setGlobalPositiveMark] = useState();
     const [globalNegativeMark, setGlobalNegativeMark] = useState();
     const [image, setImage] = useState(null);
@@ -147,8 +148,14 @@ const EditExamQuestion = () => {
             }
 
             const data = await response.json();
-            setExamNames(
-                data.data.map((exam) => ({
+            setSubjecExamNames(
+                data.data.subject_exams.map((exam) => ({
+                    label: exam.exam_name,
+                    key: exam.id,
+                }))
+            );
+            setCombinedSubjecExamNames(
+                data.data.combined_exams.map((exam) => ({
                     label: exam.exam_name,
                     key: exam.id,
                 }))
@@ -189,7 +196,12 @@ const EditExamQuestion = () => {
         setSelectedExamName(examLabel);
         const accessToken = localStorage.getItem("accessToken");
 
-        const selectedExam = examNames.find((exam) => exam.label === examLabel);
+        const selectedExam = subjectExamNames.find(
+            (exam) => exam.label === examLabel
+        );
+        const selectedCombinedExam = combinedExamNames.find(
+            (exam) => exam.label === examLabel
+        );
 
         if (selectedExam) {
             try {
@@ -209,6 +221,64 @@ const EditExamQuestion = () => {
                     const result = await response.json();
                     const examData = result.data.exam;
                     setExamId(selectedExam.key);
+
+                    if (examData.questions && examData.questions.length > 0) {
+                        setGlobalPositiveMark(
+                            examData.questions[0].positive_mark || 0
+                        );
+                        setGlobalNegativeMark(
+                            examData.questions[0].negative_mark || 0
+                        );
+                    }
+
+                    if (examData.exam_image) {
+                        const imageData = examData.exam_image;
+                        setImage({
+                            uid: "-1",
+                            name: `${examData.exam_name}.png`,
+                            status: "done",
+                            url: imageData,
+                        });
+                    }
+
+                    setQuestions(
+                        examData.questions.map((q) => ({
+                            question: q.question_title,
+                            options: q.options.map((option) => ({
+                                value: option,
+                            })),
+                            correctOption: q.options.indexOf(q.correct_answer),
+                            positiveMark: q.positive_mark,
+                            negativeMark: q.negative_mark,
+                        }))
+                    );
+                } else {
+                    console.error("Failed to fetch exam info");
+                }
+            } catch (error) {
+                console.error("Error fetching exam info:", error);
+            }
+        }
+        if (selectedCombinedExam) {
+            try {
+                const response = await fetch(
+                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/get-exam-info",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify({
+                            exam_id: selectedCombinedExam.key,
+                        }),
+                    }
+                );
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const examData = result.data.exam;
+                    setExamId(selectedCombinedExam.key);
 
                     if (examData.questions && examData.questions.length > 0) {
                         setGlobalPositiveMark(
@@ -663,10 +733,46 @@ const EditExamQuestion = () => {
                                                     </Space>
                                                 </a>
                                             </Dropdown>
-
                                             <Dropdown
                                                 menu={{
-                                                    items: examNames.map(
+                                                    items: combinedExamNames.map(
+                                                        (item) => ({
+                                                            label: item.label,
+                                                            key: item.key,
+                                                            onClick: () =>
+                                                                handleExamMenuClick(
+                                                                    item.label
+                                                                ),
+                                                        })
+                                                    ),
+                                                }}
+                                                trigger={["click"]}
+                                                disabled={
+                                                    selectedExamCategory ===
+                                                    "Select exam category"
+                                                }
+                                            >
+                                                <a
+                                                    onClick={(e) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    <Space>
+                                                        <Button
+                                                            disabled={
+                                                                selectedExamCategory ===
+                                                                "Select exam category"
+                                                            }
+                                                        >
+                                                            {selectedExamName}{" "}
+                                                            <DownOutlined />
+                                                        </Button>
+                                                    </Space>
+                                                </a>
+                                            </Dropdown>
+                                            <Dropdown
+                                                menu={{
+                                                    items: subjectExamNames.map(
                                                         (item) => ({
                                                             label: item.label,
                                                             key: item.key,
