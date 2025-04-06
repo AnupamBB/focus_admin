@@ -382,7 +382,7 @@ const ReuseSubject = () => {
                                 padding: "24px 24px 0",
                             }}
                         >
-                            Edit Categories
+                            Reuse Subjects data
                         </div>
                         <hr
                             style={{
