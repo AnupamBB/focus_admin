@@ -11,6 +11,7 @@ import EditNotes from "./screens/edit/NotesEdit.tsx";
 import EditQuestionPaper from "./screens/edit/EditQsnPaper.tsx";
 import EditReference from "./screens/edit/EditRef.tsx";
 import EditExamCategories from "./screens/edit_categories/EditExamCategories.tsx";
+import ReuseSubject from "./screens/useExistingSubject/ReuseSubject.tsx";
 
 function App() {
     return (
@@ -43,6 +44,7 @@ function App() {
                     path="EditExamCategories"
                     element={<EditExamCategories />}
                 />
+                <Route path="ReuseSubject" element={<ReuseSubject />} />
             </Routes>
         </Router>
     );

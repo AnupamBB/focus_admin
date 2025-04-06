@@ -316,7 +316,9 @@ const EditQuestionPaper = () => {
             navigate("/references");
         } else if (key === "6") {
             navigate("/upload-current-affairs");
-        } else if (key === "7") navigate("/EditExamCategories");
+        } else if (key === "7") {
+            navigate("/EditExamCategories");
+        } else if (key === "8") navigate("/ReuseSubject");
     };
 
     return (
@@ -343,6 +345,7 @@ const EditQuestionPaper = () => {
                     </Menu.SubMenu>
                     <Menu.Item key="6">Current Affairs</Menu.Item>
                     <Menu.Item key="7">Edit Categories</Menu.Item>
+                    <Menu.Item key="8">Reuse Subjects</Menu.Item>
                 </Menu>
             </Sider>
             <Layout>

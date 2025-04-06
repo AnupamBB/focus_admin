@@ -1,30 +1,24 @@
 import { useEffect, useState } from "react";
 import { DownOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import {
-    Layout,
-    message,
-    Menu,
-    Button,
-    Form,
-    Input,
-    Dropdown,
-    Space,
-} from "antd";
+import { Layout, message, Menu, Button, Form, Dropdown, Space } from "antd";
 import "../styles.css";
 import "react-quill/dist/quill.snow.css";
 
 const { Header, Content, Sider } = Layout;
 
-const EditExamCategories = () => {
+const ReuseSubject = () => {
     const navigate = useNavigate();
     const [selectedMasterCategory, setSelectedMasterCategory] = useState(
-        "Select master category"
+        "Select from Master Category"
+    );
+    const [selectedToMasterCategory, setSelectedToMasterCategory] = useState(
+        "Select to Master Category"
     );
     const [masterCategoryItems, setMasterCategoryItems] = useState([]);
-
+    const [toMasterCategoryItems, setToMasterCategoryItems] = useState([]);
     const [examCategories, setExamCategories] = useState([]);
-    const [examNames, setExamNames] = useState([]);
+    const [toExamCategories, setToExamCategories] = useState([]);
     const [examSubjectsNames, setSubjectsNames] = useState([]);
     const [selectedExamName, setSelectedExamName] =
         useState("Select exam name");
@@ -32,7 +26,10 @@ const EditExamCategories = () => {
         "Select exam subject name"
     );
     const [selectedExamCategory, setSelectedExamCategory] = useState(
-        "Select exam category"
+        "Select from Exam Category"
+    );
+    const [selectedToExamCategory, setSelectedToExamCategory] = useState(
+        "Select to Exam Category"
     );
     const [newMasterCategory, setNewMasterCategory] = useState("");
     const [newExamCategory, setNewExamCategory] = useState("");
@@ -106,41 +103,6 @@ const EditExamCategories = () => {
         }
     };
 
-    const fetchExamNames = async (examCategory, isSubject) => {
-        const accessToken = localStorage.getItem("accessToken");
-        try {
-            const response = await fetch(
-                "https://examappbackend-0mts.onrender.com/api/v1/app/admin/get-all-exams-under-exam-category",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                    body: JSON.stringify({ exam_category: examCategory }), // Always send only examCategory
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-
-            setExamNames(
-                (isSubject
-                    ? data.data.subject_exams
-                    : data.data.combined_exams
-                ).map((exam) => ({
-                    label: exam.exam_name,
-                    key: exam.id,
-                }))
-            );
-        } catch (error) {
-            console.error("Error fetching exam names:", error);
-        }
-    };
-
     const fetchSubjectsNames = async (examCategory) => {
         const accessToken = localStorage.getItem("accessToken");
         try {
@@ -173,16 +135,81 @@ const EditExamCategories = () => {
         }
     };
 
+    const fetchToMasterCategories = async () => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-master-categories",
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const categories = data.data.master_categories;
+
+            const items = categories.map((category, index) => ({
+                label: category.master_category,
+                key: index.toString(),
+            }));
+
+            setToMasterCategoryItems(items);
+        } catch (error) {
+            console.error("Error fetching master categories:", error);
+        }
+    };
+
+    const fetchToExamCategories = async (masterCategory) => {
+        const accessToken = localStorage.getItem("accessToken");
+        try {
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/app/user/get-exam-category",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({
+                        master_category: masterCategory,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setToExamCategories(
+                data.data.examCategories.map((category) => ({
+                    label: category.exam_category,
+                    key: category.exam_category,
+                    image: category.exam_category_image,
+                }))
+            );
+        } catch (error) {
+            console.error("Error fetching exam categories:", error);
+        }
+    };
+
     const handleCategorySelect = (key) => {
         const selectedCategory = masterCategoryItems.find(
             (item) => item.key === key
         );
         const masterCategory = selectedCategory
             ? selectedCategory.label
-            : "Select master category";
+            : "Select from Master Category";
         setSelectedMasterCategory(masterCategory);
 
-        if (masterCategory !== "Select master category") {
+        if (masterCategory !== "Select from Master Category") {
             fetchExamCategories(masterCategory);
         }
     };
@@ -193,11 +220,10 @@ const EditExamCategories = () => {
         );
         const examCategory = selectedCategory
             ? selectedCategory.label
-            : "Select exam category";
+            : "Select from Exam Category";
         setSelectedExamCategory(examCategory);
 
-        if (examCategory !== "Select exam category") {
-            fetchExamNames(examCategory, false); // Fetch combined exams
+        if (examCategory !== "Select from Exam Category") {
             fetchSubjectsNames(examCategory); // Fetch subjects separately
         }
     };
@@ -208,147 +234,80 @@ const EditExamCategories = () => {
         );
         const examSubject = selectedExamName
             ? selectedExamName.label
-            : "Select exam category";
+            : "Select from Exam Category";
         setSelectedExamSubjectName(examSubject);
+        fetchToMasterCategories();
+    };
 
-        if (examSubject !== "Select exam category") {
-            fetchExamNames(selectedExamCategory, true); // Fetch subject-specific exams
+    const handleToCategorySelect = (key) => {
+        const selectedCategory = toMasterCategoryItems.find(
+            (item) => item.key === key
+        );
+        const masterCategory = selectedCategory
+            ? selectedCategory.label
+            : "Select to Master Category";
+        setSelectedToMasterCategory(masterCategory);
+
+        if (masterCategory !== "Select to Master Category") {
+            fetchToExamCategories(masterCategory);
         }
+    };
+    const handleToExamCategorySelect = (key) => {
+        const selectedCategory = toExamCategories.find(
+            (item) => item.key === key
+        );
+        const examCategory = selectedCategory
+            ? selectedCategory.label
+            : "Select to Exam Category";
+        setSelectedToExamCategory(examCategory);
     };
 
     const handleSubmitAll = async () => {
         const accessToken = localStorage.getItem("accessToken");
 
-        if (!accessToken) {
-            console.error("Access token not found");
-            message.error("Access token not found. Please log in again.");
+        if (
+            selectedMasterCategory === "Select from Master Category" ||
+            selectedExamCategory === "Select from Exam Category" ||
+            selectedExamSubjectName === "Select exam subject name" ||
+            selectedToMasterCategory === "Select to Master Category" ||
+            selectedToExamCategory === "Select to Exam Category"
+        ) {
+            message.warning("Please make all selections before submitting.");
             return;
         }
 
+        const payload = {
+            from_master_category: selectedMasterCategory,
+            from_exam_category: selectedExamCategory,
+            from_subject_name: selectedExamSubjectName,
+            to_master_category: selectedToMasterCategory,
+            to_exam_category: selectedToExamCategory,
+        };
+
         try {
-            let apiUrl = "";
-            let requestBody = {};
-
-            if (
-                selectedMasterCategory !== "Select master category" &&
-                selectedExamCategory === "Select exam category" &&
-                selectedExamName === "Select exam name"
-            ) {
-                if (
-                    !selectedMasterCategory.trim() ||
-                    !newMasterCategory.trim()
-                ) {
-                    message.warning(
-                        "Old and new master category names cannot be empty."
-                    );
-                    return;
+            const response = await fetch(
+                "https://examappbackend-0mts.onrender.com/api/v1/app/admin/clone-subject",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
                 }
-
-                apiUrl =
-                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/edit-master-category";
-                requestBody = {
-                    old_name: selectedMasterCategory,
-                    new_name: newMasterCategory,
-                };
-            } else if (
-                selectedMasterCategory !== "Select master category" &&
-                selectedExamCategory !== "Select exam category" &&
-                selectedExamName !== "Select exam name"
-            ) {
-                if (!selectedExamName.trim() || !newName.trim()) {
-                    message.warning("Old and new exam names cannot be empty.");
-                    return;
-                }
-
-                apiUrl =
-                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/edit-exam-name";
-                requestBody = {
-                    master_category: selectedMasterCategory,
-                    exam_category: selectedExamCategory,
-                    old_name: selectedExamName,
-                    new_name: newName,
-                };
-            } else if (selectedExamSubjectName !== "Select exam subject name") {
-                if (!newExamSubjectName.trim()) {
-                    message.warning(
-                        "Old and new subject names cannot be empty."
-                    );
-                    return;
-                }
-                apiUrl =
-                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/edit-subject-name";
-                requestBody = {
-                    old_name: selectedExamSubjectName,
-                    new_name: newExamSubjectName,
-                };
-            } else if (
-                selectedMasterCategory !== "Select master category" &&
-                selectedExamCategory !== "Select exam category" &&
-                selectedExamName === "Select exam name"
-            ) {
-                if (!selectedExamCategory.trim() || !newExamCategory.trim()) {
-                    message.warning(
-                        "Old and new exam category cannot be empty."
-                    );
-                    return;
-                }
-
-                apiUrl =
-                    "https://examappbackend-0mts.onrender.com/api/v1/app/admin/edit-exam-category";
-                requestBody = {
-                    master_category: selectedMasterCategory,
-                    old_name: selectedExamCategory,
-                    new_name: newExamCategory,
-                };
-            } else {
-                message.warning("Please select at least a master category.");
-                return;
-            }
-
-            const response = await fetch(apiUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify(requestBody),
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`Error: ${response.statusText}`);
             }
 
-            const data = await response.json();
-            console.log("API Response:", data);
-
-            if (data.data.result.modifiedCount > 0) {
-                message.success(data.message || "Changes saved successfully!");
-
-                // Clear fields
-                setSelectedMasterCategory("Select master category");
-                setSelectedExamCategory("Select exam category");
-                setSelectedExamName("Select exam name");
-                setSelectedExamSubjectName("Select exam subject name");
-                setNewMasterCategory("");
-                setNewExamCategory("");
-                setNewSubjectName("");
-                setNewName("");
-
-                // Reload the page
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                message.info("No changes were made.");
-            }
+            const result = await response.json();
+            message.success("Subject cloned successfully!");
+            console.log("Clone success:", result);
         } catch (error) {
             console.error("Error submitting data:", error);
             message.error("Failed to submit data.");
         }
-    };
-
-    const handleExamMenuClick = async (examLabel) => {
-        setSelectedExamName(examLabel);
     };
 
     const onMenuClick = ({ key }) => {
@@ -538,7 +497,7 @@ const EditExamCategories = () => {
                                                     trigger={["click"]}
                                                     disabled={
                                                         selectedMasterCategory ===
-                                                        "Select master category"
+                                                        "Select from Master Category"
                                                     }
                                                 >
                                                     <a
@@ -550,7 +509,7 @@ const EditExamCategories = () => {
                                                             <Button
                                                                 disabled={
                                                                     selectedMasterCategory ===
-                                                                    "Select master category"
+                                                                    "Select from Master Category"
                                                                 }
                                                             >
                                                                 {
@@ -586,7 +545,7 @@ const EditExamCategories = () => {
                                                     trigger={["click"]}
                                                     disabled={
                                                         selectedExamCategory ===
-                                                        "Select exam category"
+                                                        "Select from Exam Category"
                                                     }
                                                 >
                                                     <a
@@ -598,7 +557,7 @@ const EditExamCategories = () => {
                                                             <Button
                                                                 disabled={
                                                                     selectedExamCategory ===
-                                                                    "Select exam category"
+                                                                    "Select from Exam Category"
                                                                 }
                                                             >
                                                                 {
@@ -609,23 +568,41 @@ const EditExamCategories = () => {
                                                         </Space>
                                                     </a>
                                                 </Dropdown>
+                                            </div>
+                                            <div
+                                                style={{
+                                                    margin: "16px",
+                                                    width: "100%",
+                                                    display: "flex",
+                                                    justifyContent:
+                                                        "space-around",
+                                                }}
+                                            >
                                                 <Dropdown
                                                     menu={{
-                                                        items: examNames.map(
+                                                        items: toMasterCategoryItems.map(
                                                             (item) => ({
-                                                                label: item.label,
                                                                 key: item.key,
-                                                                onClick: () =>
-                                                                    handleExamMenuClick(
-                                                                        item.label
-                                                                    ),
+                                                                label: (
+                                                                    <a
+                                                                        onClick={() =>
+                                                                            handleToCategorySelect(
+                                                                                item.key
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            item.label
+                                                                        }
+                                                                    </a>
+                                                                ),
                                                             })
                                                         ),
                                                     }}
                                                     trigger={["click"]}
                                                     disabled={
-                                                        selectedExamCategory ===
-                                                        "Select exam category"
+                                                        selectedExamSubjectName ===
+                                                        "Select exam subject name"
                                                     }
                                                 >
                                                     <a
@@ -636,129 +613,65 @@ const EditExamCategories = () => {
                                                         <Space>
                                                             <Button
                                                                 disabled={
-                                                                    selectedExamCategory ===
-                                                                    "Select exam category"
+                                                                    selectedExamSubjectName ===
+                                                                    "Select exam subject name"
                                                                 }
                                                             >
                                                                 {
-                                                                    selectedExamName
-                                                                }{" "}
+                                                                    selectedToMasterCategory
+                                                                }
                                                                 <DownOutlined />
                                                             </Button>
                                                         </Space>
                                                     </a>
                                                 </Dropdown>
-                                            </div>
-                                            <div
-                                                style={{
-                                                    display: "flex",
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        marginTop: "10px",
+                                                <Dropdown
+                                                    menu={{
+                                                        items: toExamCategories.map(
+                                                            (item) => ({
+                                                                key: item.key,
+                                                                label: (
+                                                                    <a
+                                                                        onClick={() =>
+                                                                            handleToExamCategorySelect(
+                                                                                item.key
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            item.label
+                                                                        }
+                                                                    </a>
+                                                                ),
+                                                            })
+                                                        ),
                                                     }}
+                                                    trigger={["click"]}
+                                                    disabled={
+                                                        selectedToMasterCategory ===
+                                                        "Select to Master Category"
+                                                    }
                                                 >
-                                                    <Input
-                                                        placeholder="Enter New Master Category"
-                                                        style={{
-                                                            width: "300px",
-                                                        }}
-                                                        value={
-                                                            newMasterCategory
+                                                    <a
+                                                        onClick={(e) =>
+                                                            e.preventDefault()
                                                         }
-                                                        onChange={(e) =>
-                                                            setNewMasterCategory(
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            selectedExamCategory !==
-                                                            "Select exam category"
-                                                        }
-                                                    />
-                                                </div>
-
-                                                <div
-                                                    style={{
-                                                        marginTop: "10px",
-                                                    }}
-                                                >
-                                                    <Input
-                                                        placeholder="Enter New Exam Category"
-                                                        style={{
-                                                            width: "300px",
-                                                        }}
-                                                        value={newExamCategory}
-                                                        onChange={(e) =>
-                                                            setNewExamCategory(
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            selectedExamCategory ===
-                                                                "Select exam category" ||
-                                                            selectedMasterCategory ===
-                                                                "Select master category" ||
-                                                            selectedExamSubjectName !==
-                                                                "Select exam subject name" ||
-                                                            selectedExamName !==
-                                                                "Select exam name"
-                                                        }
-                                                    />
-                                                </div>
-
-                                                <div
-                                                    style={{
-                                                        marginTop: "10px",
-                                                    }}
-                                                >
-                                                    <Input
-                                                        placeholder="Enter New Exam Subject"
-                                                        style={{
-                                                            width: "300px",
-                                                        }}
-                                                        value={
-                                                            newExamSubjectName
-                                                        }
-                                                        onChange={(e) =>
-                                                            setNewSubjectName(
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            selectedExamSubjectName ===
-                                                                "Select exam subject name" ||
-                                                            selectedMasterCategory ===
-                                                                "Select master category" ||
-                                                            selectedExamName !==
-                                                                "Select exam name"
-                                                        }
-                                                    />
-                                                </div>
-
-                                                <div
-                                                    style={{
-                                                        marginTop: "10px",
-                                                    }}
-                                                >
-                                                    <Input
-                                                        placeholder="Enter New Name"
-                                                        style={{
-                                                            width: "300px",
-                                                        }}
-                                                        value={newName}
-                                                        onChange={(e) =>
-                                                            setNewName(
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            selectedExamName ===
-                                                            "Select exam name"
-                                                        }
-                                                    />
-                                                </div>
+                                                    >
+                                                        <Space>
+                                                            <Button
+                                                                disabled={
+                                                                    selectedToMasterCategory ===
+                                                                    "Select to Master Category"
+                                                                }
+                                                            >
+                                                                {
+                                                                    selectedToExamCategory
+                                                                }
+                                                                <DownOutlined />
+                                                            </Button>
+                                                        </Space>
+                                                    </a>
+                                                </Dropdown>
                                             </div>
                                         </div>
                                     </Form.Item>
@@ -787,4 +700,4 @@ const EditExamCategories = () => {
     );
 };
 
-export default EditExamCategories;
+export default ReuseSubject;
