@@ -13,6 +13,7 @@ import {
     Space,
     Upload,
     TimePicker,
+    Modal,
 } from "antd";
 import "../styles.css";
 import ReactQuill from "react-quill";
@@ -400,7 +401,6 @@ const EditExamQuestion = () => {
                         negative_mark: Number(q.negativeMark),
                     })),
                 };
-                console.log("payload", payload);
                 const accessToken = localStorage.getItem("accessToken");
 
                 const response = await fetch(
@@ -494,6 +494,46 @@ const EditExamQuestion = () => {
                 negativeMark: 0,
             },
         ]);
+    };
+
+    const handleDeleteExam = async () => {
+        if (!examId) {
+            message.error("No exam selected to delete.");
+            return;
+        }
+
+        Modal.confirm({
+            title: "Are you sure you want to delete this exam?",
+            content: "This action cannot be undone.",
+            okText: "Yes",
+            cancelText: "Cancel",
+            onOk: async () => {
+                const accessToken = localStorage.getItem("accessToken");
+                try {
+                    const response = await fetch(
+                        "https://examappbackend-0mts.onrender.com/api/v1/app/admin/delete_exam",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${accessToken}`,
+                            },
+                            body: JSON.stringify({ exam_id: examId }),
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error("Failed to delete exam");
+                    }
+
+                    message.success("Exam deleted successfully");
+                    window.location.reload();
+                } catch (error) {
+                    console.error("Error deleting exam:", error);
+                    message.error("Failed to delete exam");
+                }
+            },
+        });
     };
 
     const handleDeleteQuestion = (questionIndex: number) => {
@@ -889,6 +929,22 @@ const EditExamQuestion = () => {
                                     </Upload>
                                 </Form.Item>
                             </Form>
+                        </div>
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <Button
+                                type="primary"
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={handleDeleteExam}
+                                disabled={!examId}
+                            >
+                                Delete This Exam
+                            </Button>
                         </div>
 
                         {questions.map((question, questionIndex) => (
